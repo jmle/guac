@@ -9,8 +9,8 @@ require (
 	github.com/neo4j/neo4j-go-driver/v4 v4.4.7
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0
 	github.com/spf13/cobra v1.7.0
-	go.uber.org/zap v1.26.0
-	google.golang.org/api v0.141.0
+	go.uber.org/zap v1.25.0
+	google.golang.org/api v0.138.0
 )
 
 require (
@@ -47,7 +47,7 @@ require (
 )
 
 require (
-	ariga.io/atlas v0.14.1-0.20230918065911-83ad451a4935 // indirect
+	ariga.io/atlas v0.12.1-0.20230620155259-b8e83e5e8ad6 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect
@@ -62,6 +62,21 @@ require (
 	github.com/anchore/go-struct-converter v0.0.0-20221221214134-65614c61201e // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.11 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.31 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.7 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.37 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.38 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.1.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.12 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.32 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.31 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.15.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.13.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.15.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.21.1 // indirect
+	github.com/aws/smithy-go v1.14.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bombsimon/logrusr/v2 v2.0.1 // indirect
 	github.com/bradleyfalzon/ghinstallation/v2 v2.6.0 // indirect
@@ -93,7 +108,7 @@ require (
 	github.com/google/go-github/v53 v53.2.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/renameio/v2 v2.0.0 // indirect
-	github.com/google/s2a-go v0.1.7 // indirect
+	github.com/google/s2a-go v0.1.5 // indirect
 	github.com/google/wire v0.5.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/h2non/filetype v1.1.3 // indirect
@@ -126,6 +141,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc3 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
+	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
@@ -163,7 +179,7 @@ require (
 	golang.org/x/tools v0.11.0 // indirect
 	golang.org/x/vuln v1.0.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230803162519-f966b187b2e5 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230911183012-2d3300fd4832 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230807174057-1744710a1577 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
@@ -175,14 +191,18 @@ require (
 
 require (
 	entgo.io/contrib v0.4.5
-	entgo.io/ent v0.12.4-0.20230918073025-797534a0d1ca
+	entgo.io/ent v0.12.4-0.20230702151415-1ec75238037c
 	github.com/99designs/gqlgen v0.17.37
 	github.com/CycloneDX/cyclonedx-go v0.7.1
 	github.com/DATA-DOG/go-txdb v0.1.7
 	github.com/Khan/genqlient v0.6.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/arangodb/go-driver v1.6.0
-	github.com/aws/aws-sdk-go v1.45.12
+	github.com/aws/aws-sdk-go v1.45.7
+	github.com/aws/aws-sdk-go-v2 v1.20.0
+	github.com/aws/aws-sdk-go-v2/config v1.18.32
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.38.1
+	github.com/aws/aws-sdk-go-v2/service/sqs v1.24.1
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-git/go-git/v5 v5.8.1
 	github.com/gobwas/glob v0.2.3
@@ -201,12 +221,13 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/nats-io/nats-server/v2 v2.9.21
 	github.com/nats-io/nats.go v1.28.0
-	github.com/openvex/go-vex v0.2.1
+	github.com/openvex/go-vex v0.2.0
 	github.com/ossf/scorecard/v4 v4.12.0
 	github.com/package-url/packageurl-go v0.1.1
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.16.0
+	github.com/prometheus/client_golang v1.15.1
 	github.com/regclient/regclient v0.5.1
+	github.com/segmentio/kafka-go v0.4.42
 	github.com/segmentio/ksuid v1.0.4
 	github.com/sigstore/sigstore v1.7.3
 	github.com/spdx/tools-golang v0.5.3
@@ -216,3 +237,5 @@ require (
 	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
 	gopkg.in/yaml.v3 v3.0.1
 )
+
+replace github.com/openvex/go-vex => github.com/openvex/go-vex v0.2.1-0.20230519031452-e31eaf94ec95
