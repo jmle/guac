@@ -66,7 +66,7 @@ func (s S3Collector) RetrieveArtifacts(ctx context.Context, docChannel chan<- *p
 		wg.Add(1)
 
 		go func(queue string) {
-			mp, err := getMessageProvider(ctx, s, queue)
+			mp, err := getMessageProvider(s, queue)
 			if err != nil {
 				logger.Errorf("error getting message provider for queue %v: %v", queue, err)
 				return
@@ -126,7 +126,6 @@ func (s S3Collector) RetrieveArtifacts(ctx context.Context, docChannel chan<- *p
 				}
 			}
 
-			mp.Close(ctx)
 		}(queue)
 	}
 
@@ -135,13 +134,16 @@ func (s S3Collector) RetrieveArtifacts(ctx context.Context, docChannel chan<- *p
 	return nil
 }
 
-func getMessageProvider(ctx context.Context, s S3Collector, queue string) (messaging.MessageProvider, error) {
+func getMessageProvider(s S3Collector, queue string) (messaging.MessageProvider, error) {
 	var err error
 	var mpBuilder messaging.MessageProviderBuilder
 	if s.config.MpBuilder != nil {
 		mpBuilder = s.config.MpBuilder
 	} else {
 		mpBuilder, err = messaging.GetDefaultMessageProviderBuilder()
+		if err != nil {
+			return nil, fmt.Errorf("error getting message provider: %v", err)
+		}
 	}
 
 	mp, err := mpBuilder.GetMessageProvider(messaging.MessageProviderConfig{
@@ -152,7 +154,7 @@ func getMessageProvider(ctx context.Context, s S3Collector, queue string) (messa
 		Region:   s.config.Region,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error creating message provider: %s\n", err)
+		return nil, fmt.Errorf("error creating message provider: %s", err)
 	}
 
 	return mp, nil
@@ -169,5 +171,5 @@ func getDownloader(s S3Collector) bucket.Bucket {
 }
 
 func (s S3Collector) Type() string {
-	return s.Type()
+	return S3CollectorType
 }

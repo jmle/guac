@@ -69,7 +69,10 @@ func NewKafkaProvider(mpConfig MessageProviderConfig) (KafkaProvider, error) {
 		Partition: 0,
 		MaxBytes:  10e6,
 	})
-	kafkaProvider.reader.SetOffset(kafka.LastOffset)
+	err := kafkaProvider.reader.SetOffset(kafka.LastOffset)
+	if err != nil {
+		return KafkaProvider{}, err
+	}
 
 	return kafkaProvider, nil
 }

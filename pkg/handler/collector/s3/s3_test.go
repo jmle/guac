@@ -106,7 +106,7 @@ func (td TestBucketBuilder) GetDownloader(hostname string, port string, region s
 func TestQueuesSplit(t *testing.T) {
 	ctx := context.Background()
 
-	sigChan := make(chan os.Signal)
+	sigChan := make(chan os.Signal, 1)
 	s3Collector, _ := NewS3Collector(S3CollectorConfig{
 		Queues:        "q1,q2",
 		MpBuilder:     TestMpBuilder{},
@@ -125,7 +125,10 @@ func TestQueuesSplit(t *testing.T) {
 	outC := make(chan string)
 	go func() {
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		_, err := io.Copy(&buf, r)
+		if err != nil {
+			return
+		}
 		outC <- buf.String()
 	}()
 
@@ -138,7 +141,12 @@ func TestQueuesSplit(t *testing.T) {
 		return true
 	}
 
-	go collector.Collect(ctx, em, eh)
+	go func() {
+		err := collector.Collect(ctx, em, eh)
+		if err != nil {
+			fmt.Printf("error collecting: %v", err)
+		}
+	}()
 	time.Sleep(5 * time.Second)
 	signal.Notify(sigChan, os.Interrupt)
 
