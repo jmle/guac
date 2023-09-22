@@ -89,7 +89,7 @@ func (k KafkaProvider) ReceiveMessage(ctx context.Context) (Message, error) {
 	msg := KafkaMessage{}
 	err = json.Unmarshal(m.Value, &msg)
 	if err != nil {
-		return msg, fmt.Errorf("error parsing JSON:", err)
+		return msg, fmt.Errorf("error parsing JSON: %v", err)
 	}
 
 	return msg, err
