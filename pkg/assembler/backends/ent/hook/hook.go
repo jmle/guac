@@ -57,6 +57,18 @@ func (f CertificationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Valu
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CertificationMutation", m)
 }
 
+// The CertifyLegalFunc type is an adapter to allow the use of ordinary
+// function as CertifyLegal mutator.
+type CertifyLegalFunc func(context.Context, *ent.CertifyLegalMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CertifyLegalFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CertifyLegalMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CertifyLegalMutation", m)
+}
+
 // The CertifyScorecardFunc type is an adapter to allow the use of ordinary
 // function as CertifyScorecard mutator.
 type CertifyScorecardFunc func(context.Context, *ent.CertifyScorecardMutation) (ent.Value, error)
@@ -105,6 +117,18 @@ func (f DependencyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DependencyMutation", m)
 }
 
+// The HasMetadataFunc type is an adapter to allow the use of ordinary
+// function as HasMetadata mutator.
+type HasMetadataFunc func(context.Context, *ent.HasMetadataMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f HasMetadataFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.HasMetadataMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HasMetadataMutation", m)
+}
+
 // The HasSourceAtFunc type is an adapter to allow the use of ordinary
 // function as HasSourceAt mutator.
 type HasSourceAtFunc func(context.Context, *ent.HasSourceAtMutation) (ent.Value, error)
@@ -139,6 +163,18 @@ func (f IsVulnerabilityFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IsVulnerabilityMutation", m)
+}
+
+// The LicenseFunc type is an adapter to allow the use of ordinary
+// function as License mutator.
+type LicenseFunc func(context.Context, *ent.LicenseMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f LicenseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.LicenseMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LicenseMutation", m)
 }
 
 // The OccurrenceFunc type is an adapter to allow the use of ordinary
@@ -211,6 +247,18 @@ func (f PkgEqualFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PkgEqualMutation", m)
+}
+
+// The PointOfContactFunc type is an adapter to allow the use of ordinary
+// function as PointOfContact mutator.
+type PointOfContactFunc func(context.Context, *ent.PointOfContactMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PointOfContactFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PointOfContactMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PointOfContactMutation", m)
 }
 
 // The SLSAAttestationFunc type is an adapter to allow the use of ordinary
@@ -295,6 +343,18 @@ func (f VulnerabilityIDFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.VulnerabilityIDMutation", m)
+}
+
+// The VulnerabilityMetadataFunc type is an adapter to allow the use of ordinary
+// function as VulnerabilityMetadata mutator.
+type VulnerabilityMetadataFunc func(context.Context, *ent.VulnerabilityMetadataMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f VulnerabilityMetadataFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.VulnerabilityMetadataMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.VulnerabilityMetadataMutation", m)
 }
 
 // The VulnerabilityTypeFunc type is an adapter to allow the use of ordinary

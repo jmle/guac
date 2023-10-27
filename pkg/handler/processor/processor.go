@@ -63,7 +63,6 @@ const (
 	DocumentCycloneDX        DocumentType = "CycloneDX"
 	DocumentDepsDev          DocumentType = "DEPS_DEV"
 	DocumentCsaf             DocumentType = "CSAF"
-	DocumentCdxVex           DocumentType = "CDX_VEX"
 	DocumentOpenVEX          DocumentType = "OPEN_VEX"
 	DocumentIngestPredicates DocumentType = "INGEST_PREDICATES"
 	DocumentUnknown          DocumentType = "UNKNOWN"
@@ -87,6 +86,11 @@ const (
 	EncodingZstd    EncodingType = "ZSTD"
 	EncodingUnknown EncodingType = "UNKNOWN"
 )
+
+var EncodingExts = map[string]EncodingType{
+	".bz2": EncodingBzip2,
+	".zst": EncodingZstd,
+}
 
 // SourceInformation provides additional information about where the document comes from
 type SourceInformation struct {

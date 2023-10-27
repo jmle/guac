@@ -20,6 +20,8 @@ type Tx struct {
 	Builder *BuilderClient
 	// Certification is the client for interacting with the Certification builders.
 	Certification *CertificationClient
+	// CertifyLegal is the client for interacting with the CertifyLegal builders.
+	CertifyLegal *CertifyLegalClient
 	// CertifyScorecard is the client for interacting with the CertifyScorecard builders.
 	CertifyScorecard *CertifyScorecardClient
 	// CertifyVex is the client for interacting with the CertifyVex builders.
@@ -28,12 +30,16 @@ type Tx struct {
 	CertifyVuln *CertifyVulnClient
 	// Dependency is the client for interacting with the Dependency builders.
 	Dependency *DependencyClient
+	// HasMetadata is the client for interacting with the HasMetadata builders.
+	HasMetadata *HasMetadataClient
 	// HasSourceAt is the client for interacting with the HasSourceAt builders.
 	HasSourceAt *HasSourceAtClient
 	// HashEqual is the client for interacting with the HashEqual builders.
 	HashEqual *HashEqualClient
 	// IsVulnerability is the client for interacting with the IsVulnerability builders.
 	IsVulnerability *IsVulnerabilityClient
+	// License is the client for interacting with the License builders.
+	License *LicenseClient
 	// Occurrence is the client for interacting with the Occurrence builders.
 	Occurrence *OccurrenceClient
 	// PackageName is the client for interacting with the PackageName builders.
@@ -46,6 +52,8 @@ type Tx struct {
 	PackageVersion *PackageVersionClient
 	// PkgEqual is the client for interacting with the PkgEqual builders.
 	PkgEqual *PkgEqualClient
+	// PointOfContact is the client for interacting with the PointOfContact builders.
+	PointOfContact *PointOfContactClient
 	// SLSAAttestation is the client for interacting with the SLSAAttestation builders.
 	SLSAAttestation *SLSAAttestationClient
 	// Scorecard is the client for interacting with the Scorecard builders.
@@ -60,6 +68,8 @@ type Tx struct {
 	VulnEqual *VulnEqualClient
 	// VulnerabilityID is the client for interacting with the VulnerabilityID builders.
 	VulnerabilityID *VulnerabilityIDClient
+	// VulnerabilityMetadata is the client for interacting with the VulnerabilityMetadata builders.
+	VulnerabilityMetadata *VulnerabilityMetadataClient
 	// VulnerabilityType is the client for interacting with the VulnerabilityType builders.
 	VulnerabilityType *VulnerabilityTypeClient
 
@@ -197,19 +207,23 @@ func (tx *Tx) init() {
 	tx.BillOfMaterials = NewBillOfMaterialsClient(tx.config)
 	tx.Builder = NewBuilderClient(tx.config)
 	tx.Certification = NewCertificationClient(tx.config)
+	tx.CertifyLegal = NewCertifyLegalClient(tx.config)
 	tx.CertifyScorecard = NewCertifyScorecardClient(tx.config)
 	tx.CertifyVex = NewCertifyVexClient(tx.config)
 	tx.CertifyVuln = NewCertifyVulnClient(tx.config)
 	tx.Dependency = NewDependencyClient(tx.config)
+	tx.HasMetadata = NewHasMetadataClient(tx.config)
 	tx.HasSourceAt = NewHasSourceAtClient(tx.config)
 	tx.HashEqual = NewHashEqualClient(tx.config)
 	tx.IsVulnerability = NewIsVulnerabilityClient(tx.config)
+	tx.License = NewLicenseClient(tx.config)
 	tx.Occurrence = NewOccurrenceClient(tx.config)
 	tx.PackageName = NewPackageNameClient(tx.config)
 	tx.PackageNamespace = NewPackageNamespaceClient(tx.config)
 	tx.PackageType = NewPackageTypeClient(tx.config)
 	tx.PackageVersion = NewPackageVersionClient(tx.config)
 	tx.PkgEqual = NewPkgEqualClient(tx.config)
+	tx.PointOfContact = NewPointOfContactClient(tx.config)
 	tx.SLSAAttestation = NewSLSAAttestationClient(tx.config)
 	tx.Scorecard = NewScorecardClient(tx.config)
 	tx.SourceName = NewSourceNameClient(tx.config)
@@ -217,6 +231,7 @@ func (tx *Tx) init() {
 	tx.SourceType = NewSourceTypeClient(tx.config)
 	tx.VulnEqual = NewVulnEqualClient(tx.config)
 	tx.VulnerabilityID = NewVulnerabilityIDClient(tx.config)
+	tx.VulnerabilityMetadata = NewVulnerabilityMetadataClient(tx.config)
 	tx.VulnerabilityType = NewVulnerabilityTypeClient(tx.config)
 }
 

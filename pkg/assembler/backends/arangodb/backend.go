@@ -23,6 +23,9 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
+
+	jsoniter "github.com/json-iterator/go"
+
 	"github.com/arangodb/go-driver"
 	arangodbdriverhttp "github.com/arangodb/go-driver/http"
 	"github.com/guacsec/guac/internal/testing/ptrfrom"
@@ -31,6 +34,8 @@ import (
 )
 
 const (
+	arangoDB        string        = "guac_db"
+	arangoGraph     string        = "guac"
 	namespaces      string        = "namespaces"
 	names           string        = namespaces + ".names"
 	versions        string        = names + ".versions"
@@ -38,6 +43,7 @@ const (
 	origin          string        = "origin"
 	collector       string        = "collector"
 	justification   string        = "justification"
+	knownSince      string        = "knownSince"
 	maxRetires      int           = 100
 	retryTimer      time.Duration = time.Microsecond
 	guacEmpty       string        = "guac-empty-@@"
@@ -71,6 +77,10 @@ const (
 	vulnTypesStr              string = "vulnTypes"
 	vulnHasVulnerabilityIDStr string = "vulnHasVulnerabilityID"
 	vulnerabilitiesStr        string = "vulnerabilities"
+
+	// license collection
+
+	licensesStr string = "licenses"
 
 	// isDependency collections
 
@@ -178,7 +188,90 @@ const (
 	certifyGoodSrcEdgesStr        string = "certifyGoodSrcEdges"
 	certifyGoodArtEdgesStr        string = "certifyGoodArtEdges"
 	certifyGoodsStr               string = "certifyGoods"
+
+	// certifyLegal collection
+
+	certifyLegalPkgEdgesStr                string = "certifyLegalPkgEdges"
+	certifyLegalSrcEdgesStr                string = "certifyLegalSrcEdges"
+	certifyLegalDeclaredLicensesEdgesStr   string = "certifyLegalDeclaredLicensesEdges"
+	certifyLegalDiscoveredLicensesEdgesStr string = "certifyLegalDiscoveredLicensesEdges"
+	certifyLegalsStr                       string = "certifyLegals"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
+
+var mapEdgeToArangoEdgeCollection = map[model.Edge][]string{
+	model.EdgeArtifactCertifyBad:               {certifyBadArtEdgesStr},
+	model.EdgeArtifactCertifyGood:              {certifyGoodArtEdgesStr},
+	model.EdgeArtifactCertifyVexStatement:      {certifyVexArtEdgesStr},
+	model.EdgeArtifactHashEqual:                {hashEqualSubjectArtEdgesStr},
+	model.EdgeArtifactHasMetadata:              {hasMetadataArtEdgesStr},
+	model.EdgeArtifactHasSbom:                  {hasSBOMArtEdgesStr},
+	model.EdgeArtifactHasSlsa:                  {hasSLSASubjectArtEdgesStr},
+	model.EdgeArtifactIsOccurrence:             {isOccurrenceArtEdgesStr},
+	model.EdgeArtifactPointOfContact:           {pointOfContactArtEdgesStr},
+	model.EdgeBuilderHasSlsa:                   {hasSLSABuiltByEdgesStr},
+	model.EdgeLicenseCertifyLegal:              {certifyLegalDeclaredLicensesEdgesStr, certifyLegalDiscoveredLicensesEdgesStr},
+	model.EdgePackageCertifyBad:                {certifyBadPkgVersionEdgesStr, certifyBadPkgNameEdgesStr},
+	model.EdgePackageCertifyGood:               {certifyGoodPkgVersionEdgesStr, certifyGoodPkgNameEdgesStr},
+	model.EdgePackageCertifyLegal:              {certifyLegalPkgEdgesStr},
+	model.EdgePackageCertifyVexStatement:       {certifyVexPkgEdgesStr},
+	model.EdgePackageCertifyVuln:               {certifyVulnPkgEdgesStr},
+	model.EdgePackageHasMetadata:               {hasMetadataPkgNameEdgesStr, hasMetadataPkgVersionEdgesStr},
+	model.EdgePackageHasSbom:                   {hasSBOMPkgEdgesStr},
+	model.EdgePackageHasSourceAt:               {hasMetadataPkgVersionEdgesStr, hasSourceAtPkgNameEdgesStr},
+	model.EdgePackageIsDependency:              {isDependencySubjectPkgEdgesStr},
+	model.EdgePackageIsOccurrence:              {isOccurrenceSubjectPkgEdgesStr},
+	model.EdgePackagePkgEqual:                  {pkgEqualSubjectPkgEdgesStr},
+	model.EdgePackagePointOfContact:            {pointOfContactPkgVersionEdgesStr, pointOfContactPkgNameEdgesStr},
+	model.EdgeSourceCertifyBad:                 {certifyBadSrcEdgesStr},
+	model.EdgeSourceCertifyGood:                {certifyGoodSrcEdgesStr},
+	model.EdgeSourceCertifyLegal:               {certifyLegalSrcEdgesStr},
+	model.EdgeSourceCertifyScorecard:           {scorecardSrcEdgesStr},
+	model.EdgeSourceHasMetadata:                {hasMetadataSrcEdgesStr},
+	model.EdgeSourceHasSourceAt:                {hasSourceAtEdgesStr},
+	model.EdgeSourceIsOccurrence:               {isOccurrenceSubjectSrcEdgesStr},
+	model.EdgeSourcePointOfContact:             {pointOfContactSrcEdgesStr},
+	model.EdgeVulnerabilityCertifyVexStatement: {certifyVexVulnEdgesStr},
+	model.EdgeVulnerabilityCertifyVuln:         {certifyVulnEdgesStr},
+	model.EdgeVulnerabilityVulnEqual:           {vulnEqualVulnEdgesStr},
+	model.EdgeVulnerabilityVulnMetadata:        {vulnMetadataEdgesStr},
+	model.EdgeCertifyBadArtifact:               {certifyBadArtEdgesStr},
+	model.EdgeCertifyBadPackage:                {certifyBadPkgVersionEdgesStr, certifyBadPkgNameEdgesStr},
+	model.EdgeCertifyBadSource:                 {certifyBadSrcEdgesStr},
+	model.EdgeCertifyGoodArtifact:              {certifyGoodArtEdgesStr},
+	model.EdgeCertifyGoodPackage:               {certifyGoodPkgVersionEdgesStr, certifyGoodPkgNameEdgesStr},
+	model.EdgeCertifyGoodSource:                {certifyGoodSrcEdgesStr},
+	model.EdgeCertifyLegalLicense:              {certifyLegalDeclaredLicensesEdgesStr, certifyLegalDiscoveredLicensesEdgesStr},
+	model.EdgeCertifyLegalPackage:              {certifyLegalsStr},
+	model.EdgeCertifyScorecardSource:           {scorecardSrcEdgesStr},
+	model.EdgeCertifyVexStatementArtifact:      {certifyVexArtEdgesStr},
+	model.EdgeCertifyVexStatementPackage:       {certifyVexPkgEdgesStr},
+	model.EdgeCertifyVexStatementVulnerability: {certifyVexVulnEdgesStr},
+	model.EdgeCertifyVulnPackage:               {certifyVulnPkgEdgesStr},
+	model.EdgeCertifyVulnVulnerability:         {certifyVulnsStr},
+	model.EdgeHashEqualArtifact:                {hashEqualArtEdgesStr},
+	model.EdgeHasMetadataArtifact:              {hasMetadataArtEdgesStr},
+	model.EdgeHasMetadataPackage:               {hasMetadataPkgVersionEdgesStr, hasMetadataPkgNameEdgesStr},
+	model.EdgeHasMetadataSource:                {hasMetadataSrcEdgesStr},
+	model.EdgeHasSbomArtifact:                  {hasSBOMArtEdgesStr},
+	model.EdgeHasSbomPackage:                   {hasSBOMPkgEdgesStr},
+	model.EdgeHasSlsaBuiltBy:                   {hasSLSABuiltByEdgesStr},
+	model.EdgeHasSlsaMaterials:                 {hasSLSABuiltFromEdgesStr},
+	model.EdgeHasSlsaSubject:                   {hasSLSASubjectArtEdgesStr},
+	model.EdgeHasSourceAtPackage:               {hasSourceAtPkgVersionEdgesStr, hasSourceAtPkgNameEdgesStr},
+	model.EdgeHasSourceAtSource:                {hasSourceAtEdgesStr},
+	model.EdgeIsDependencyPackage:              {isDependencyDepPkgVersionEdgesStr, isDependencyDepPkgNameEdgesStr},
+	model.EdgeIsOccurrenceArtifact:             {isOccurrenceArtEdgesStr},
+	model.EdgeIsOccurrencePackage:              {isOccurrenceSubjectPkgEdgesStr},
+	model.EdgeIsOccurrenceSource:               {isOccurrenceSubjectSrcEdgesStr},
+	model.EdgePkgEqualPackage:                  {pkgEqualPkgEdgesStr},
+	model.EdgePointOfContactArtifact:           {pointOfContactArtEdgesStr},
+	model.EdgePointOfContactPackage:            {pointOfContactPkgVersionEdgesStr, pointOfContactPkgNameEdgesStr},
+	model.EdgePointOfContactSource:             {pointOfContactSrcEdgesStr},
+	model.EdgeVulnEqualVulnerability:           {vulnEqualVulnEdgesStr},
+	model.EdgeVulnMetadataVulnerability:        {vulnMetadataEdgesStr},
+}
 
 type ArangoConfig struct {
 	User     string
@@ -231,12 +324,12 @@ func deleteDatabase(ctx context.Context, args backends.BackendArgs) error {
 	}
 	var db driver.Database
 	// check if database exists
-	dbExists, err := arangodbClient.DatabaseExists(ctx, "guac_db")
+	dbExists, err := arangodbClient.DatabaseExists(ctx, arangoDB)
 	if err != nil {
 		return fmt.Errorf("failed to check %s database with error: %w", config.DBAddr, err)
 	}
 	if dbExists {
-		db, err = arangodbClient.Database(ctx, "guac_db")
+		db, err = arangodbClient.Database(ctx, arangoDB)
 		if err != nil {
 			return fmt.Errorf("failed to connect %s database with error: %w", config.DBAddr, err)
 		}
@@ -259,18 +352,18 @@ func getBackend(ctx context.Context, args backends.BackendArgs) (backends.Backen
 	}
 	var db driver.Database
 	// check if database exists
-	dbExists, err := arangodbClient.DatabaseExists(ctx, "guac_db")
+	dbExists, err := arangodbClient.DatabaseExists(ctx, arangoDB)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check %s database with error: %w", config.DBAddr, err)
 	}
 	if dbExists {
-		db, err = arangodbClient.Database(ctx, "guac_db")
+		db, err = arangodbClient.Database(ctx, arangoDB)
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect %s database with error: %w", config.DBAddr, err)
 		}
 	} else {
 		// Create database
-		db, err = arangodbClient.CreateDatabase(ctx, "guac_db", nil)
+		db, err = arangodbClient.CreateDatabase(ctx, arangoDB, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create %s database with error: %w", config.DBAddr, err)
 		}
@@ -280,12 +373,12 @@ func getBackend(ctx context.Context, args backends.BackendArgs) (backends.Backen
 
 	// check if graph exists
 
-	graphExists, err := db.GraphExists(ctx, "guac")
+	graphExists, err := db.GraphExists(ctx, arangoGraph)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check if graph exists with error: %w", err)
 	}
 	if graphExists {
-		graph, err = db.Graph(ctx, "guac")
+		graph, err = db.Graph(ctx, arangoGraph)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get graph with error: %w", err)
 		}
@@ -555,6 +648,27 @@ func getBackend(ctx context.Context, args backends.BackendArgs) (backends.Backen
 		certifyGoodSrcEdges.From = []string{srcNamesStr}
 		certifyGoodSrcEdges.To = []string{certifyGoodsStr}
 
+		// setup certifyLegal collections
+		var certifyLegalPkgEdges driver.EdgeDefinition
+		certifyLegalPkgEdges.Collection = certifyLegalPkgEdgesStr
+		certifyLegalPkgEdges.From = []string{pkgVersionsStr}
+		certifyLegalPkgEdges.To = []string{certifyLegalsStr}
+
+		var certifyLegalSrcEdges driver.EdgeDefinition
+		certifyLegalSrcEdges.Collection = certifyLegalSrcEdgesStr
+		certifyLegalSrcEdges.From = []string{srcNamesStr}
+		certifyLegalSrcEdges.To = []string{certifyLegalsStr}
+
+		var certifyLegalDeclaredLicensesEdges driver.EdgeDefinition
+		certifyLegalDeclaredLicensesEdges.Collection = certifyLegalDeclaredLicensesEdgesStr
+		certifyLegalDeclaredLicensesEdges.From = []string{certifyLegalsStr}
+		certifyLegalDeclaredLicensesEdges.To = []string{licensesStr}
+
+		var certifyLegalDiscoveredLicensesEdges driver.EdgeDefinition
+		certifyLegalDiscoveredLicensesEdges.Collection = certifyLegalDiscoveredLicensesEdgesStr
+		certifyLegalDiscoveredLicensesEdges.From = []string{certifyLegalsStr}
+		certifyLegalDiscoveredLicensesEdges.To = []string{licensesStr}
+
 		// A graph can contain additional vertex collections, defined in the set of orphan collections
 		var options driver.CreateGraphOptions
 		options.EdgeDefinitions = []driver.EdgeDefinition{pkgHasNamespace, pkgHasName,
@@ -566,10 +680,11 @@ func getBackend(ctx context.Context, args backends.BackendArgs) (backends.Backen
 			certifyVexPkgEdges, certifyVexArtEdges, certifyVexVulnEdges, vulnMetadataEdges, vulnEqualVulnEdges, vulnEqualSubjectVulnEdges,
 			pkgEqualPkgEdges, pkgEqualSubjectPkgEdges, hasMetadataPkgVersionEdges, hasMetadataPkgNameEdges,
 			hasMetadataArtEdges, hasMetadataSrcEdges, pointOfContactPkgVersionEdges, pointOfContactPkgNameEdges,
-			pointOfContactArtEdges, pointOfContactSrcEdges, hasSourceAtEdges, hasSourceAtPkgVersionEdges, hasSourceAtPkgNameEdges}
+			pointOfContactArtEdges, pointOfContactSrcEdges, hasSourceAtEdges, hasSourceAtPkgVersionEdges, hasSourceAtPkgNameEdges,
+			certifyLegalPkgEdges, certifyLegalSrcEdges, certifyLegalDeclaredLicensesEdges, certifyLegalDiscoveredLicensesEdges}
 
 		// create a graph
-		graph, err = db.CreateGraphV2(ctx, "guac", &options)
+		graph, err = db.CreateGraphV2(ctx, arangoGraph, &options)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create graph: %w", err)
 		}
@@ -597,8 +712,8 @@ func getBackend(ctx context.Context, args backends.BackendArgs) (backends.Backen
 			return nil, fmt.Errorf("failed to generate index for vulnerabilities: %w", err)
 		}
 
-		if err := createIndexPerCollection(ctx, db, hashEqualsStr, []string{"artifactID", "equalArtifactID", "justification"}, true, "byArtIDEqualArtIDJust"); err != nil {
-			return nil, fmt.Errorf("failed to generate index for hashEquals: %w", err)
+		if err := createIndexPerCollection(ctx, db, licensesStr, []string{"name", "inline", "listversion"}, true, "byNameInlineListVer"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for licenses: %w", err)
 		}
 
 		if err := createIndexPerCollection(ctx, db, pkgTypesStr, []string{"type"}, true, "byPkgType"); err != nil {
@@ -637,12 +752,144 @@ func getBackend(ctx context.Context, args backends.BackendArgs) (backends.Backen
 			return nil, fmt.Errorf("failed to generate index for srcNames: %w", err)
 		}
 
+		// index for isDependency
 		if err := createIndexPerCollection(ctx, db, isDependenciesStr, []string{"packageID", "depPackageID", "versionRange", "origin"}, false, "byPkgIDDepPkgIDversionRangeOrigin"); err != nil {
 			return nil, fmt.Errorf("failed to generate index for isDependencies: %w", err)
 		}
 
+		// index for isOccurrence
 		if err := createIndexPerCollection(ctx, db, isOccurrencesStr, []string{"packageID", "artifactID", "justification", "origin"}, true, "byPkgIDArtIDOriginJust"); err != nil {
 			return nil, fmt.Errorf("failed to generate index for isOccurrences: %w", err)
+		}
+
+		// index for certifyBad - Artifact
+		if err := createIndexPerCollection(ctx, db, certifyBadsStr, []string{"artifactID", "justification", "knownSince"}, false, "certifyBadArtifactID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for certifyBad: %w", err)
+		}
+
+		// index for certifyBad - Package
+		if err := createIndexPerCollection(ctx, db, certifyBadsStr, []string{"packageID", "justification", "knownSince"}, false, "certifyBadPackageID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for certifyBad: %w", err)
+		}
+
+		// index for certifyBad - Source
+		if err := createIndexPerCollection(ctx, db, certifyBadsStr, []string{"sourceID", "justification", "knownSince"}, false, "certifyBadSourceID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for certifyBad: %w", err)
+		}
+
+		// index for certifyGood - Artifact
+		if err := createIndexPerCollection(ctx, db, certifyGoodsStr, []string{"artifactID", "justification", "knownSince"}, false, "certifyGoodArtifactID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for certifyGood: %w", err)
+		}
+
+		// index for certifyGood - Package
+		if err := createIndexPerCollection(ctx, db, certifyGoodsStr, []string{"packageID", "justification", "knownSince"}, false, "certifyGoodPackageID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for certifyGood: %w", err)
+		}
+
+		// index for certifyGood - Source
+		if err := createIndexPerCollection(ctx, db, certifyGoodsStr, []string{"sourceID", "justification", "knownSince"}, false, "certifyGoodSourceID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for certifyGood: %w", err)
+		}
+
+		// index for certifyLegal - Package
+		if err := createIndexPerCollection(ctx, db, certifyLegalsStr, []string{"packageID", "declaredLicense", "declaredLicenses", "discoveredLicense", "discoveredLicenses", "attribution", "justification", "timeScanned", "origin"}, false, "certifyLegalPackageID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for certifyLegal: %w", err)
+		}
+
+		// index for certifyLegal - Source
+		if err := createIndexPerCollection(ctx, db, certifyLegalsStr, []string{"sourceID", "declaredLicense", "declaredLicenses", "discoveredLicense", "discoveredLicenses", "attribution", "justification", "timeScanned", "origin"}, false, "certifyLegalSourceID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for isOccurrences: %w", err)
+		}
+
+		// index for certifyScorecard
+		if err := createIndexPerCollection(ctx, db, scorecardStr, []string{"sourceID", "checks", "aggregateScore", "timeScanned", "origin"}, true, "certifyScorecard"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for certifyScorecard: %w", err)
+		}
+
+		// index for certifyVex - Package
+		if err := createIndexPerCollection(ctx, db, certifyVEXsStr, []string{"packageID", "vulnerabilityID", "status", "vexJustification", "statement", "statusNotes", "knownSince", "origin"}, false, "certifyVexPackageID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for certifyVex: %w", err)
+		}
+
+		// index for certifyVex - Artifact
+		if err := createIndexPerCollection(ctx, db, certifyVEXsStr, []string{"artifactID", "vulnerabilityID", "status", "vexJustification", "statement", "statusNotes", "knownSince", "origin"}, false, "certifyVexArtifactID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for isOccurrences: %w", err)
+		}
+
+		// index for certifyVuln
+		if err := createIndexPerCollection(ctx, db, certifyVulnsStr, []string{"packageID", "vulnerabilityID", "ScannerVersion", "dbUri", "dbVersion", "scannerUri", "scannerVersion", "timeScanned", "origin"}, true, "certifyVuln"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for certifyVuln: %w", err)
+		}
+
+		// index for hashEquals
+		if err := createIndexPerCollection(ctx, db, hashEqualsStr, []string{"artifactID", "equalArtifactID", "justification", "origin"}, true, "hashEquals"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for hashEquals: %w", err)
+		}
+
+		// index for hashMetadata - Artifact
+		if err := createIndexPerCollection(ctx, db, hasMetadataStr, []string{"artifactID", "key", "value", "timestamp", "justification", "origin"}, false, "hashMetadataArtifactID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for hashMetadata: %w", err)
+		}
+
+		// index for hashMetadata - Package
+		if err := createIndexPerCollection(ctx, db, hasMetadataStr, []string{"packageID", "key", "value", "timestamp", "justification", "origin"}, false, "hashMetadataPackageID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for hashMetadata: %w", err)
+		}
+
+		// index for hashMetadata - Source
+		if err := createIndexPerCollection(ctx, db, hasMetadataStr, []string{"sourceID", "key", "value", "timestamp", "justification", "origin"}, false, "hashMetadataSourceID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for hashMetadata: %w", err)
+		}
+
+		// index for hasSbom - Artifact
+		if err := createIndexPerCollection(ctx, db, hasSBOMsStr, []string{"artifactID", "uri", "algorithm", "digest", "knownSince", "downloadLocation", "origin"}, false, "hasSbomArtifactID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for hasSbom: %w", err)
+		}
+
+		// index for hasSbom - Package
+		if err := createIndexPerCollection(ctx, db, hasSBOMsStr, []string{"packageID", "uri", "algorithm", "digest", "knownSince", "downloadLocation", "origin"}, false, "hasSbomPackageID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for hasSbom: %w", err)
+		}
+
+		// index for hasSlsa
+		if err := createIndexPerCollection(ctx, db, hasSLSAsStr, []string{"subjectID", "builtByID", "buildType", "builtFrom", "slsaPredicate", "slsaVersion", "startedOn", "finishedOn", "origin"}, true, "hasSlsa"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for hasSlsa: %w", err)
+		}
+
+		// index for hasSourceAt
+		if err := createIndexPerCollection(ctx, db, hasSourceAtsStr, []string{"packageID", "sourceID", "justification", "knownSince", "origin"}, true, "hasSourceAt"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for hasSourceAt: %w", err)
+		}
+
+		// index for pkgEqual
+		if err := createIndexPerCollection(ctx, db, pkgEqualsStr, []string{"packageID", "equalPackageID", "justification", "origin"}, true, "pkgEqual"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for pkgEqual: %w", err)
+		}
+
+		// index for pointOfContact - Artifact
+		if err := createIndexPerCollection(ctx, db, pointOfContactStr, []string{"artifactID", "email", "info", "since", "justification", "origin"}, false, "pointOfContactArtifactID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for pointOfContact: %w", err)
+		}
+
+		// index for pointOfContact - Package
+		if err := createIndexPerCollection(ctx, db, pointOfContactStr, []string{"packageID", "email", "info", "since", "justification", "origin"}, false, "pointOfContactPackageID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for pointOfContact: %w", err)
+		}
+
+		// index for pointOfContact - Source
+		if err := createIndexPerCollection(ctx, db, pointOfContactStr, []string{"sourceID", "email", "info", "since", "justification", "origin"}, false, "pointOfContactSourceID"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for pointOfContact: %w", err)
+		}
+
+		// index for vulnEqual
+		if err := createIndexPerCollection(ctx, db, vulnEqualsStr, []string{"vulnerabilityID", "equalVulnerabilityID", "justification", "origin"}, true, "vulnEqual"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for vulnEqual: %w", err)
+		}
+
+		// index for vulnMetadata
+		if err := createIndexPerCollection(ctx, db, vulnMetadataStr, []string{"vulnerabilityID", "scoreType", "scoreValue", "timestamp", "origin"}, true, "vulnMetadata"); err != nil {
+			return nil, fmt.Errorf("failed to generate index for vulnMetadata: %w", err)
 		}
 
 		// GUAC key indices for package
@@ -697,13 +944,16 @@ func getBackend(ctx context.Context, args backends.BackendArgs) (backends.Backen
 			CommitInterval:        ptrfrom.Int64(10 * 60 * 1000),
 			ConsolidationInterval: ptrfrom.Int64(10 * 60 * 1000),
 			Links: driver.ArangoSearchLinks{
+				// Only index the version string since guac files creates a lot of noise in the index
+				// from the name of the file being in the subpath
+				// TODO : would be a good addition to have an excludes from search field instead so files can be filtered
 				pkgVersionsStr: driver.ArangoSearchElementProperties{
 					Analyzers:          []string{"identity", "text_en", "customgram"},
 					IncludeAllFields:   ptrfrom.Bool(false),
 					TrackListPositions: ptrfrom.Bool(false),
 					StoreValues:        driver.ArangoSearchStoreValuesNone,
 					Fields: map[string]driver.ArangoSearchElementProperties{
-						"guacKey": {},
+						"version": {},
 					},
 					InBackground: ptrfrom.Bool(true),
 				},
@@ -910,25 +1160,6 @@ func getPreloadString(prefix, name string) string {
 		return prefix + "." + name
 	}
 	return name
-}
-
-func (c *arangoClient) Licenses(ctx context.Context, licenseSpec *model.LicenseSpec) ([]*model.License, error) {
-	panic(fmt.Errorf("not implemented: Licenses"))
-}
-func (c *arangoClient) IngestLicense(ctx context.Context, license *model.LicenseInputSpec) (*model.License, error) {
-	panic(fmt.Errorf("not implemented: IngestLicense"))
-}
-func (c *arangoClient) IngestLicenses(ctx context.Context, licenses []*model.LicenseInputSpec) ([]*model.License, error) {
-	panic(fmt.Errorf("not implemented: IngestLicenses"))
-}
-func (c *arangoClient) CertifyLegal(ctx context.Context, certifyLegalSpec *model.CertifyLegalSpec) ([]*model.CertifyLegal, error) {
-	panic(fmt.Errorf("not implemented: CertifyLegal"))
-}
-func (c *arangoClient) IngestCertifyLegal(ctx context.Context, subject model.PackageOrSourceInput, declaredLicenses []*model.LicenseInputSpec, discoveredLicenses []*model.LicenseInputSpec, certifyLegal *model.CertifyLegalInputSpec) (*model.CertifyLegal, error) {
-	panic(fmt.Errorf("not implemented: IngestCertifyLegal"))
-}
-func (c *arangoClient) IngestCertifyLegals(ctx context.Context, subjects model.PackageOrSourceInputs, declaredLicensesList [][]*model.LicenseInputSpec, discoveredLicensesList [][]*model.LicenseInputSpec, certifyLegals []*model.CertifyLegalInputSpec) ([]*model.CertifyLegal, error) {
-	panic(fmt.Errorf("not implemented: IngestCertifyLegals"))
 }
 
 func ptrfromArangoSearchNGramStreamType(s driver.ArangoSearchNGramStreamType) *driver.ArangoSearchNGramStreamType {

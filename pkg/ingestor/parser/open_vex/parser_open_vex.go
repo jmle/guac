@@ -67,7 +67,7 @@ func (c *openVEXParser) Parse(ctx context.Context, doc *processor.Document) erro
 	}
 
 	for _, s := range openVex.Statements {
-		vuln, err := helpers.CreateVulnInput(s.Vulnerability)
+		vuln, err := helpers.CreateVulnInput(string(s.Vulnerability.Name))
 		if err != nil {
 			return fmt.Errorf("failed to create vulnerability input: %w", err)
 		}
@@ -118,6 +118,8 @@ func (c *openVEXParser) generateVexIngest(vulnInput *generated.VulnerabilityInpu
 
 		if vexStatus, ok := vexStatusMap[vex.Status(status)]; ok {
 			vd.Status = vexStatus
+		} else {
+			return nil, fmt.Errorf("invalid status for openVEX: %s", status)
 		}
 
 		if vd.Status == generated.VexStatusNotAffected {
@@ -126,17 +128,21 @@ func (c *openVEXParser) generateVexIngest(vulnInput *generated.VulnerabilityInpu
 			vd.Statement = vexStatement.ActionStatement
 		}
 
-		vd.VexJustification = justificationsMap[vexStatement.Justification]
+		if just, ok := justificationsMap[vexStatement.Justification]; ok {
+			vd.VexJustification = just
+		} else {
+			vd.VexJustification = generated.VexJustificationNotProvided
+		}
 
 		ingest.VexData = &vd
 		ingest.Vulnerability = vulnInput
 
 		var err error
-		if ingest.Pkg, err = helpers.PurlToPkg(p); err != nil {
+		if ingest.Pkg, err = helpers.PurlToPkg(p.ID); err != nil {
 			return nil, err
 		}
 
-		c.identifierStrings.PurlStrings = append(c.identifierStrings.PurlStrings, p)
+		c.identifierStrings.PurlStrings = append(c.identifierStrings.PurlStrings, p.ID)
 
 		vi = append(vi, ingest)
 	}

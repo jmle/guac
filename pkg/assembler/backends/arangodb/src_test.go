@@ -19,6 +19,7 @@ package arangodb
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 
@@ -26,11 +27,11 @@ import (
 	"github.com/guacsec/guac/internal/testing/ptrfrom"
 	"github.com/guacsec/guac/internal/testing/testdata"
 	"github.com/guacsec/guac/pkg/assembler/graphql/model"
-	"golang.org/x/exp/slices"
 )
 
-func lessSource(a, b *model.Source) bool {
-	return a.Namespaces[0].Namespace < b.Namespaces[0].Namespace
+func lessSource(a, b *model.Source) int {
+	return strings.Compare(a.Namespaces[0].Namespace,
+		b.Namespaces[0].Namespace)
 }
 
 func Test_IngestSources(t *testing.T) {
@@ -214,7 +215,8 @@ func Test_SourceTypes(t *testing.T) {
 			}, {
 				Type:       "svn",
 				Namespaces: []*model.SourceNamespace{},
-			}},
+			},
+		},
 		wantErr: false,
 	}, {
 		name:     "bobsrepo with commit, type search",
@@ -320,7 +322,8 @@ func Test_SourceNamespaces(t *testing.T) {
 					Namespace: "github.com/bob",
 					Names:     []*model.SourceName{},
 				}},
-			}},
+			},
+		},
 		wantErr: false,
 	}, {
 		name:     "bobsrepo with commit, type search",
@@ -429,15 +432,15 @@ func Test_buildSourceResponseFromID(t *testing.T) {
 	}, cmp.Ignore())
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ingestedPkg, err := b.IngestSource(ctx, *tt.srcInput)
+			ingestedSrc, err := b.IngestSource(ctx, *tt.srcInput)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("arangoClient.IngestSource() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tt.idInFilter {
-				tt.srcFilter.ID = &ingestedPkg.Namespaces[0].Names[0].ID
+				tt.srcFilter.ID = &ingestedSrc.Namespaces[0].Names[0].ID
 			}
-			got, err := b.(*arangoClient).buildSourceResponseFromID(ctx, ingestedPkg.Namespaces[0].Names[0].ID, tt.srcFilter)
+			got, err := b.(*arangoClient).buildSourceResponseFromID(ctx, ingestedSrc.Namespaces[0].Names[0].ID, tt.srcFilter)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("arangoClient.buildSourceResponseFromID() error = %v, wantErr %v", err, tt.wantErr)
 				return

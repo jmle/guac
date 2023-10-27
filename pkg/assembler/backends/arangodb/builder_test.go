@@ -19,49 +19,14 @@ package arangodb
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/guacsec/guac/internal/testing/ptrfrom"
 	"github.com/guacsec/guac/pkg/assembler/graphql/model"
-	"golang.org/x/exp/slices"
 )
-
-// TODO (pxp928): add tests back in when implemented
-
-// func Test_builderStruct_Neighbors(t *testing.T) {
-// 	type fields struct {
-// 		id       uint32
-// 		uri      string
-// 		hasSLSAs []uint32
-// 	}
-// 	tests := []struct {
-// 		name         string
-// 		fields       fields
-// 		allowedEdges edgeMap
-// 		want         []uint32
-// 	}{{
-// 		name: "hasSLSAs",
-// 		fields: fields{
-// 			hasSLSAs: []uint32{445, 1232244},
-// 		},
-// 		allowedEdges: edgeMap{model.EdgeBuilderHasSlsa: true},
-// 		want:         []uint32{445, 1232244},
-// 	}}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			b := &builderStruct{
-// 				id:       tt.fields.id,
-// 				uri:      tt.fields.uri,
-// 				hasSLSAs: tt.fields.hasSLSAs,
-// 			}
-// 			if got := b.Neighbors(tt.allowedEdges); !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("builderStruct.Neighbors() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
 
 func Test_IngestBuilder(t *testing.T) {
 	ctx := context.Background()
@@ -116,8 +81,8 @@ func Test_IngestBuilder(t *testing.T) {
 	}
 }
 
-func lessBuilder(a, b *model.Builder) bool {
-	return a.URI < b.URI
+func lessBuilder(a, b *model.Builder) int {
+	return strings.Compare(a.URI, b.URI)
 }
 
 func Test_IngestBuilders(t *testing.T) {
@@ -144,14 +109,16 @@ func Test_IngestBuilders(t *testing.T) {
 			},
 			{
 				URI: "https://tekton.dev/chains/v2",
-			}},
+			},
+		},
 		want: []*model.Builder{
 			{
 				URI: "https://github.com/CreateFork/HubHostedActions@v1",
 			},
 			{
 				URI: "https://tekton.dev/chains/v2",
-			}},
+			},
+		},
 		wantErr: false,
 	}}
 
@@ -244,6 +211,64 @@ func Test_Builders(t *testing.T) {
 				return
 			}
 			slices.SortFunc(got, lessBuilder)
+			if diff := cmp.Diff(tt.want, got, ignoreID); diff != "" {
+				t.Errorf("Unexpected results. (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func Test_buildBuilderResponseByID(t *testing.T) {
+	ctx := context.Background()
+	arangArg := getArangoConfig()
+	err := deleteDatabase(ctx, arangArg)
+	if err != nil {
+		t.Fatalf("error deleting arango database: %v", err)
+	}
+	b, err := getBackend(ctx, arangArg)
+	if err != nil {
+		t.Fatalf("error creating arango backend: %v", err)
+	}
+	tests := []struct {
+		name         string
+		builderInput *model.BuilderInputSpec
+		want         *model.Builder
+		wantErr      bool
+	}{{
+		name: "HubHostedActions",
+		builderInput: &model.BuilderInputSpec{
+			URI: "https://github.com/CreateFork/HubHostedActions@v1",
+		},
+		want: &model.Builder{
+			URI: "https://github.com/CreateFork/HubHostedActions@v1",
+		},
+		wantErr: false,
+	}, {
+		name: "chains",
+		builderInput: &model.BuilderInputSpec{
+			URI: "https://tekton.dev/chains/v2",
+		},
+		want: &model.Builder{
+			URI: "https://tekton.dev/chains/v2",
+		},
+		wantErr: false,
+	}}
+
+	ignoreID := cmp.FilterPath(func(p cmp.Path) bool {
+		return strings.Compare(".ID", p[len(p)-1].String()) == 0
+	}, cmp.Ignore())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ingestedBuilder, err := b.IngestBuilder(ctx, tt.builderInput)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("demoClient.IngestBuilder() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			got, err := b.(*arangoClient).buildBuilderResponseByID(ctx, ingestedBuilder.ID, nil)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("arangoClient.buildPackageResponseFromID() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 			if diff := cmp.Diff(tt.want, got, ignoreID); diff != "" {
 				t.Errorf("Unexpected results. (-want +got):\n%s", diff)
 			}

@@ -116,6 +116,46 @@ func (c *Certification) Artifact(ctx context.Context) (*Artifact, error) {
 	return result, MaskNotFound(err)
 }
 
+func (cl *CertifyLegal) Package(ctx context.Context) (*PackageVersion, error) {
+	result, err := cl.Edges.PackageOrErr()
+	if IsNotLoaded(err) {
+		result, err = cl.QueryPackage().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (cl *CertifyLegal) Source(ctx context.Context) (*SourceName, error) {
+	result, err := cl.Edges.SourceOrErr()
+	if IsNotLoaded(err) {
+		result, err = cl.QuerySource().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (cl *CertifyLegal) DeclaredLicenses(ctx context.Context) (result []*License, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = cl.NamedDeclaredLicenses(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = cl.Edges.DeclaredLicensesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = cl.QueryDeclaredLicenses().All(ctx)
+	}
+	return result, err
+}
+
+func (cl *CertifyLegal) DiscoveredLicenses(ctx context.Context) (result []*License, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = cl.NamedDiscoveredLicenses(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = cl.Edges.DiscoveredLicensesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = cl.QueryDiscoveredLicenses().All(ctx)
+	}
+	return result, err
+}
+
 func (cs *CertifyScorecard) Scorecard(ctx context.Context) (*Scorecard, error) {
 	result, err := cs.Edges.ScorecardOrErr()
 	if IsNotLoaded(err) {
@@ -148,7 +188,7 @@ func (cv *CertifyVex) Artifact(ctx context.Context) (*Artifact, error) {
 	return result, MaskNotFound(err)
 }
 
-func (cv *CertifyVex) Vulnerability(ctx context.Context) (*VulnerabilityType, error) {
+func (cv *CertifyVex) Vulnerability(ctx context.Context) (*VulnerabilityID, error) {
 	result, err := cv.Edges.VulnerabilityOrErr()
 	if IsNotLoaded(err) {
 		result, err = cv.QueryVulnerability().Only(ctx)
@@ -192,6 +232,38 @@ func (d *Dependency) DependentPackageVersion(ctx context.Context) (*PackageVersi
 	result, err := d.Edges.DependentPackageVersionOrErr()
 	if IsNotLoaded(err) {
 		result, err = d.QueryDependentPackageVersion().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (hm *HasMetadata) Source(ctx context.Context) (*SourceName, error) {
+	result, err := hm.Edges.SourceOrErr()
+	if IsNotLoaded(err) {
+		result, err = hm.QuerySource().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (hm *HasMetadata) PackageVersion(ctx context.Context) (*PackageVersion, error) {
+	result, err := hm.Edges.PackageVersionOrErr()
+	if IsNotLoaded(err) {
+		result, err = hm.QueryPackageVersion().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (hm *HasMetadata) AllVersions(ctx context.Context) (*PackageName, error) {
+	result, err := hm.Edges.AllVersionsOrErr()
+	if IsNotLoaded(err) {
+		result, err = hm.QueryAllVersions().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (hm *HasMetadata) Artifact(ctx context.Context) (*Artifact, error) {
+	result, err := hm.Edges.ArtifactOrErr()
+	if IsNotLoaded(err) {
+		result, err = hm.QueryArtifact().Only(ctx)
 	}
 	return result, MaskNotFound(err)
 }
@@ -244,6 +316,30 @@ func (iv *IsVulnerability) Vulnerability(ctx context.Context) (*VulnerabilityTyp
 	result, err := iv.Edges.VulnerabilityOrErr()
 	if IsNotLoaded(err) {
 		result, err = iv.QueryVulnerability().Only(ctx)
+	}
+	return result, err
+}
+
+func (l *License) DeclaredInCertifyLegals(ctx context.Context) (result []*CertifyLegal, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = l.NamedDeclaredInCertifyLegals(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = l.Edges.DeclaredInCertifyLegalsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = l.QueryDeclaredInCertifyLegals().All(ctx)
+	}
+	return result, err
+}
+
+func (l *License) DiscoveredInCertifyLegals(ctx context.Context) (result []*CertifyLegal, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = l.NamedDiscoveredInCertifyLegals(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = l.Edges.DiscoveredInCertifyLegalsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = l.QueryDiscoveredInCertifyLegals().All(ctx)
 	}
 	return result, err
 }
@@ -380,6 +476,38 @@ func (pe *PkgEqual) Packages(ctx context.Context) (result []*PackageVersion, err
 	return result, err
 }
 
+func (poc *PointOfContact) Source(ctx context.Context) (*SourceName, error) {
+	result, err := poc.Edges.SourceOrErr()
+	if IsNotLoaded(err) {
+		result, err = poc.QuerySource().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (poc *PointOfContact) PackageVersion(ctx context.Context) (*PackageVersion, error) {
+	result, err := poc.Edges.PackageVersionOrErr()
+	if IsNotLoaded(err) {
+		result, err = poc.QueryPackageVersion().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (poc *PointOfContact) AllVersions(ctx context.Context) (*PackageName, error) {
+	result, err := poc.Edges.AllVersionsOrErr()
+	if IsNotLoaded(err) {
+		result, err = poc.QueryAllVersions().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (poc *PointOfContact) Artifact(ctx context.Context) (*Artifact, error) {
+	result, err := poc.Edges.ArtifactOrErr()
+	if IsNotLoaded(err) {
+		result, err = poc.QueryArtifact().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (sa *SLSAAttestation) BuiltFrom(ctx context.Context) (result []*Artifact, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
 		result, err = sa.NamedBuiltFrom(graphql.GetFieldContext(ctx).Field.Alias)
@@ -500,6 +628,26 @@ func (vi *VulnerabilityID) VulnEquals(ctx context.Context) (result []*VulnEqual,
 	}
 	if IsNotLoaded(err) {
 		result, err = vi.QueryVulnEquals().All(ctx)
+	}
+	return result, err
+}
+
+func (vi *VulnerabilityID) VulnerabilityMetadata(ctx context.Context) (result []*VulnerabilityMetadata, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = vi.NamedVulnerabilityMetadata(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = vi.Edges.VulnerabilityMetadataOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = vi.QueryVulnerabilityMetadata().All(ctx)
+	}
+	return result, err
+}
+
+func (vm *VulnerabilityMetadata) VulnerabilityID(ctx context.Context) (*VulnerabilityID, error) {
+	result, err := vm.Edges.VulnerabilityIDOrErr()
+	if IsNotLoaded(err) {
+		result, err = vm.QueryVulnerabilityID().Only(ctx)
 	}
 	return result, err
 }

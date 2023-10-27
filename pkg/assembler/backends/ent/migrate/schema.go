@@ -42,6 +42,7 @@ var (
 		{Name: "download_location", Type: field.TypeString},
 		{Name: "origin", Type: field.TypeString},
 		{Name: "collector", Type: field.TypeString},
+		{Name: "known_since", Type: field.TypeTime},
 		{Name: "package_id", Type: field.TypeInt, Nullable: true},
 		{Name: "artifact_id", Type: field.TypeInt, Nullable: true},
 	}
@@ -53,13 +54,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "bill_of_materials_package_versions_package",
-				Columns:    []*schema.Column{BillOfMaterialsColumns[7]},
+				Columns:    []*schema.Column{BillOfMaterialsColumns[8]},
 				RefColumns: []*schema.Column{PackageVersionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "bill_of_materials_artifacts_artifact",
-				Columns:    []*schema.Column{BillOfMaterialsColumns[8]},
+				Columns:    []*schema.Column{BillOfMaterialsColumns[9]},
 				RefColumns: []*schema.Column{ArtifactsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -68,7 +69,7 @@ var (
 			{
 				Name:    "sbom_unique_package",
 				Unique:  true,
-				Columns: []*schema.Column{BillOfMaterialsColumns[2], BillOfMaterialsColumns[3], BillOfMaterialsColumns[1], BillOfMaterialsColumns[4], BillOfMaterialsColumns[7]},
+				Columns: []*schema.Column{BillOfMaterialsColumns[2], BillOfMaterialsColumns[3], BillOfMaterialsColumns[1], BillOfMaterialsColumns[4], BillOfMaterialsColumns[7], BillOfMaterialsColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "package_id IS NOT NULL AND artifact_id IS NULL",
 				},
@@ -76,7 +77,7 @@ var (
 			{
 				Name:    "sbom_unique_artifact",
 				Unique:  true,
-				Columns: []*schema.Column{BillOfMaterialsColumns[2], BillOfMaterialsColumns[3], BillOfMaterialsColumns[1], BillOfMaterialsColumns[4], BillOfMaterialsColumns[8]},
+				Columns: []*schema.Column{BillOfMaterialsColumns[2], BillOfMaterialsColumns[3], BillOfMaterialsColumns[1], BillOfMaterialsColumns[4], BillOfMaterialsColumns[7], BillOfMaterialsColumns[9]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "package_id IS NULL AND artifact_id IS NOT NULL",
 				},
@@ -108,6 +109,7 @@ var (
 		{Name: "justification", Type: field.TypeString},
 		{Name: "origin", Type: field.TypeString},
 		{Name: "collector", Type: field.TypeString},
+		{Name: "known_since", Type: field.TypeTime},
 		{Name: "source_id", Type: field.TypeInt, Nullable: true},
 		{Name: "package_version_id", Type: field.TypeInt, Nullable: true},
 		{Name: "package_name_id", Type: field.TypeInt, Nullable: true},
@@ -121,60 +123,113 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "certifications_source_names_source",
-				Columns:    []*schema.Column{CertificationsColumns[5]},
+				Columns:    []*schema.Column{CertificationsColumns[6]},
 				RefColumns: []*schema.Column{SourceNamesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "certifications_package_versions_package_version",
-				Columns:    []*schema.Column{CertificationsColumns[6]},
+				Columns:    []*schema.Column{CertificationsColumns[7]},
 				RefColumns: []*schema.Column{PackageVersionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "certifications_package_names_all_versions",
-				Columns:    []*schema.Column{CertificationsColumns[7]},
+				Columns:    []*schema.Column{CertificationsColumns[8]},
 				RefColumns: []*schema.Column{PackageNamesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "certifications_artifacts_artifact",
-				Columns:    []*schema.Column{CertificationsColumns[8]},
+				Columns:    []*schema.Column{CertificationsColumns[9]},
 				RefColumns: []*schema.Column{ArtifactsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "certification_type_justification_origin_collector_source_id",
+				Name:    "certification_type_justification_origin_collector_source_id_known_since",
 				Unique:  true,
-				Columns: []*schema.Column{CertificationsColumns[1], CertificationsColumns[2], CertificationsColumns[3], CertificationsColumns[4], CertificationsColumns[5]},
+				Columns: []*schema.Column{CertificationsColumns[1], CertificationsColumns[2], CertificationsColumns[3], CertificationsColumns[4], CertificationsColumns[6], CertificationsColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "source_id IS NOT NULL AND package_version_id IS NULL AND package_name_id IS NULL AND artifact_id IS NULL",
 				},
 			},
 			{
-				Name:    "certification_type_justification_origin_collector_package_version_id",
+				Name:    "certification_type_justification_origin_collector_package_version_id_known_since",
 				Unique:  true,
-				Columns: []*schema.Column{CertificationsColumns[1], CertificationsColumns[2], CertificationsColumns[3], CertificationsColumns[4], CertificationsColumns[6]},
+				Columns: []*schema.Column{CertificationsColumns[1], CertificationsColumns[2], CertificationsColumns[3], CertificationsColumns[4], CertificationsColumns[7], CertificationsColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "source_id IS NULL AND package_version_id IS NOT NULL AND package_name_id IS NULL AND artifact_id IS NULL",
 				},
 			},
 			{
-				Name:    "certification_type_justification_origin_collector_package_name_id",
+				Name:    "certification_type_justification_origin_collector_package_name_id_known_since",
 				Unique:  true,
-				Columns: []*schema.Column{CertificationsColumns[1], CertificationsColumns[2], CertificationsColumns[3], CertificationsColumns[4], CertificationsColumns[7]},
+				Columns: []*schema.Column{CertificationsColumns[1], CertificationsColumns[2], CertificationsColumns[3], CertificationsColumns[4], CertificationsColumns[8], CertificationsColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "source_id IS NULL AND package_version_id IS NULL AND package_name_id IS NOT NULL AND artifact_id IS NULL",
 				},
 			},
 			{
-				Name:    "certification_type_justification_origin_collector_artifact_id",
+				Name:    "certification_type_justification_origin_collector_artifact_id_known_since",
 				Unique:  true,
-				Columns: []*schema.Column{CertificationsColumns[1], CertificationsColumns[2], CertificationsColumns[3], CertificationsColumns[4], CertificationsColumns[8]},
+				Columns: []*schema.Column{CertificationsColumns[1], CertificationsColumns[2], CertificationsColumns[3], CertificationsColumns[4], CertificationsColumns[9], CertificationsColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "source_id IS NULL AND package_version_id IS NULL AND package_name_id IS NULL AND artifact_id IS NOT NULL",
+				},
+			},
+		},
+	}
+	// CertifyLegalsColumns holds the columns for the "certify_legals" table.
+	CertifyLegalsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "declared_license", Type: field.TypeString},
+		{Name: "discovered_license", Type: field.TypeString},
+		{Name: "attribution", Type: field.TypeString},
+		{Name: "justification", Type: field.TypeString},
+		{Name: "time_scanned", Type: field.TypeTime},
+		{Name: "origin", Type: field.TypeString},
+		{Name: "collector", Type: field.TypeString},
+		{Name: "declared_licenses_hash", Type: field.TypeString},
+		{Name: "discovered_licenses_hash", Type: field.TypeString},
+		{Name: "package_id", Type: field.TypeInt, Nullable: true},
+		{Name: "source_id", Type: field.TypeInt, Nullable: true},
+	}
+	// CertifyLegalsTable holds the schema information for the "certify_legals" table.
+	CertifyLegalsTable = &schema.Table{
+		Name:       "certify_legals",
+		Columns:    CertifyLegalsColumns,
+		PrimaryKey: []*schema.Column{CertifyLegalsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "certify_legals_package_versions_package",
+				Columns:    []*schema.Column{CertifyLegalsColumns[10]},
+				RefColumns: []*schema.Column{PackageVersionsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "certify_legals_source_names_source",
+				Columns:    []*schema.Column{CertifyLegalsColumns[11]},
+				RefColumns: []*schema.Column{SourceNamesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "certifylegal_source_id_declared_license_discovered_license_attribution_justification_time_scanned_origin_collector_declared_licenses_hash_discovered_licenses_hash",
+				Unique:  true,
+				Columns: []*schema.Column{CertifyLegalsColumns[11], CertifyLegalsColumns[1], CertifyLegalsColumns[2], CertifyLegalsColumns[3], CertifyLegalsColumns[4], CertifyLegalsColumns[5], CertifyLegalsColumns[6], CertifyLegalsColumns[7], CertifyLegalsColumns[8], CertifyLegalsColumns[9]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "package_id IS NULL AND source_id IS NOT NULL",
+				},
+			},
+			{
+				Name:    "certifylegal_package_id_declared_license_discovered_license_attribution_justification_time_scanned_origin_collector_declared_licenses_hash_discovered_licenses_hash",
+				Unique:  true,
+				Columns: []*schema.Column{CertifyLegalsColumns[10], CertifyLegalsColumns[1], CertifyLegalsColumns[2], CertifyLegalsColumns[3], CertifyLegalsColumns[4], CertifyLegalsColumns[5], CertifyLegalsColumns[6], CertifyLegalsColumns[7], CertifyLegalsColumns[8], CertifyLegalsColumns[9]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "package_id IS NOT NULL AND source_id IS NULL",
 				},
 			},
 		},
@@ -245,9 +300,9 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:     "certify_vexes_vulnerability_types_vulnerability",
+				Symbol:     "certify_vexes_vulnerability_ids_vulnerability",
 				Columns:    []*schema.Column{CertifyVexesColumns[10]},
-				RefColumns: []*schema.Column{VulnerabilityTypesColumns[0]},
+				RefColumns: []*schema.Column{VulnerabilityIdsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
@@ -366,6 +421,86 @@ var (
 			},
 		},
 	}
+	// HasMetadataColumns holds the columns for the "has_metadata" table.
+	HasMetadataColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "timestamp", Type: field.TypeTime},
+		{Name: "key", Type: field.TypeString},
+		{Name: "value", Type: field.TypeString},
+		{Name: "justification", Type: field.TypeString},
+		{Name: "origin", Type: field.TypeString},
+		{Name: "collector", Type: field.TypeString},
+		{Name: "source_id", Type: field.TypeInt, Nullable: true},
+		{Name: "package_version_id", Type: field.TypeInt, Nullable: true},
+		{Name: "package_name_id", Type: field.TypeInt, Nullable: true},
+		{Name: "artifact_id", Type: field.TypeInt, Nullable: true},
+	}
+	// HasMetadataTable holds the schema information for the "has_metadata" table.
+	HasMetadataTable = &schema.Table{
+		Name:       "has_metadata",
+		Columns:    HasMetadataColumns,
+		PrimaryKey: []*schema.Column{HasMetadataColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "has_metadata_source_names_source",
+				Columns:    []*schema.Column{HasMetadataColumns[7]},
+				RefColumns: []*schema.Column{SourceNamesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "has_metadata_package_versions_package_version",
+				Columns:    []*schema.Column{HasMetadataColumns[8]},
+				RefColumns: []*schema.Column{PackageVersionsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "has_metadata_package_names_all_versions",
+				Columns:    []*schema.Column{HasMetadataColumns[9]},
+				RefColumns: []*schema.Column{PackageNamesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "has_metadata_artifacts_artifact",
+				Columns:    []*schema.Column{HasMetadataColumns[10]},
+				RefColumns: []*schema.Column{ArtifactsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "hasmetadata_timestamp_key_value_justification_origin_collector_source_id",
+				Unique:  true,
+				Columns: []*schema.Column{HasMetadataColumns[1], HasMetadataColumns[2], HasMetadataColumns[3], HasMetadataColumns[4], HasMetadataColumns[5], HasMetadataColumns[6], HasMetadataColumns[7]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "source_id IS NOT NULL AND package_version_id IS NULL AND package_name_id IS NULL AND artifact_id IS NULL",
+				},
+			},
+			{
+				Name:    "hasmetadata_timestamp_key_value_justification_origin_collector_package_version_id",
+				Unique:  true,
+				Columns: []*schema.Column{HasMetadataColumns[1], HasMetadataColumns[2], HasMetadataColumns[3], HasMetadataColumns[4], HasMetadataColumns[5], HasMetadataColumns[6], HasMetadataColumns[8]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "source_id IS NULL AND package_version_id IS NOT NULL AND package_name_id IS NULL AND artifact_id IS NULL",
+				},
+			},
+			{
+				Name:    "hasmetadata_timestamp_key_value_justification_origin_collector_package_name_id",
+				Unique:  true,
+				Columns: []*schema.Column{HasMetadataColumns[1], HasMetadataColumns[2], HasMetadataColumns[3], HasMetadataColumns[4], HasMetadataColumns[5], HasMetadataColumns[6], HasMetadataColumns[9]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "source_id IS NULL AND package_version_id IS NULL AND package_name_id IS NOT NULL AND artifact_id IS NULL",
+				},
+			},
+			{
+				Name:    "hasmetadata_timestamp_key_value_justification_origin_collector_artifact_id",
+				Unique:  true,
+				Columns: []*schema.Column{HasMetadataColumns[1], HasMetadataColumns[2], HasMetadataColumns[3], HasMetadataColumns[4], HasMetadataColumns[5], HasMetadataColumns[6], HasMetadataColumns[10]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "source_id IS NULL AND package_version_id IS NULL AND package_name_id IS NULL AND artifact_id IS NOT NULL",
+				},
+			},
+		},
+	}
 	// HasSourceAtsColumns holds the columns for the "has_source_ats" table.
 	HasSourceAtsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -472,6 +607,45 @@ var (
 				Name:    "isvulnerability_origin_justification_osv_id_vulnerability_id",
 				Unique:  true,
 				Columns: []*schema.Column{IsVulnerabilitiesColumns[2], IsVulnerabilitiesColumns[1], IsVulnerabilitiesColumns[4], IsVulnerabilitiesColumns[5]},
+			},
+		},
+	}
+	// LicensesColumns holds the columns for the "licenses" table.
+	LicensesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "inline", Type: field.TypeString, Nullable: true},
+		{Name: "list_version", Type: field.TypeString, Nullable: true},
+	}
+	// LicensesTable holds the schema information for the "licenses" table.
+	LicensesTable = &schema.Table{
+		Name:       "licenses",
+		Columns:    LicensesColumns,
+		PrimaryKey: []*schema.Column{LicensesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "license_name_inline_list_version",
+				Unique:  true,
+				Columns: []*schema.Column{LicensesColumns[1], LicensesColumns[2], LicensesColumns[3]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "inline IS NOT NULL AND list_version IS NOT NULL",
+				},
+			},
+			{
+				Name:    "license_name_list_version",
+				Unique:  true,
+				Columns: []*schema.Column{LicensesColumns[1], LicensesColumns[3]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "inline IS NULL AND list_version IS NOT NULL",
+				},
+			},
+			{
+				Name:    "license_name_inline",
+				Unique:  true,
+				Columns: []*schema.Column{LicensesColumns[1], LicensesColumns[2]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "inline IS NOT NULL AND list_version IS NULL",
+				},
 			},
 		},
 	}
@@ -652,6 +826,86 @@ var (
 				Name:    "pkgequal_packages_hash_origin_justification_collector",
 				Unique:  true,
 				Columns: []*schema.Column{PkgEqualsColumns[4], PkgEqualsColumns[1], PkgEqualsColumns[3], PkgEqualsColumns[2]},
+			},
+		},
+	}
+	// PointOfContactsColumns holds the columns for the "point_of_contacts" table.
+	PointOfContactsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "email", Type: field.TypeString},
+		{Name: "info", Type: field.TypeString},
+		{Name: "since", Type: field.TypeTime},
+		{Name: "justification", Type: field.TypeString},
+		{Name: "origin", Type: field.TypeString},
+		{Name: "collector", Type: field.TypeString},
+		{Name: "source_id", Type: field.TypeInt, Nullable: true},
+		{Name: "package_version_id", Type: field.TypeInt, Nullable: true},
+		{Name: "package_name_id", Type: field.TypeInt, Nullable: true},
+		{Name: "artifact_id", Type: field.TypeInt, Nullable: true},
+	}
+	// PointOfContactsTable holds the schema information for the "point_of_contacts" table.
+	PointOfContactsTable = &schema.Table{
+		Name:       "point_of_contacts",
+		Columns:    PointOfContactsColumns,
+		PrimaryKey: []*schema.Column{PointOfContactsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "point_of_contacts_source_names_source",
+				Columns:    []*schema.Column{PointOfContactsColumns[7]},
+				RefColumns: []*schema.Column{SourceNamesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "point_of_contacts_package_versions_package_version",
+				Columns:    []*schema.Column{PointOfContactsColumns[8]},
+				RefColumns: []*schema.Column{PackageVersionsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "point_of_contacts_package_names_all_versions",
+				Columns:    []*schema.Column{PointOfContactsColumns[9]},
+				RefColumns: []*schema.Column{PackageNamesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "point_of_contacts_artifacts_artifact",
+				Columns:    []*schema.Column{PointOfContactsColumns[10]},
+				RefColumns: []*schema.Column{ArtifactsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "pointofcontact_since_email_info_justification_origin_collector_source_id",
+				Unique:  true,
+				Columns: []*schema.Column{PointOfContactsColumns[3], PointOfContactsColumns[1], PointOfContactsColumns[2], PointOfContactsColumns[4], PointOfContactsColumns[5], PointOfContactsColumns[6], PointOfContactsColumns[7]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "source_id IS NOT NULL AND package_version_id IS NULL AND package_name_id IS NULL AND artifact_id IS NULL",
+				},
+			},
+			{
+				Name:    "pointofcontact_since_email_info_justification_origin_collector_package_version_id",
+				Unique:  true,
+				Columns: []*schema.Column{PointOfContactsColumns[3], PointOfContactsColumns[1], PointOfContactsColumns[2], PointOfContactsColumns[4], PointOfContactsColumns[5], PointOfContactsColumns[6], PointOfContactsColumns[8]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "source_id IS NULL AND package_version_id IS NOT NULL AND package_name_id IS NULL AND artifact_id IS NULL",
+				},
+			},
+			{
+				Name:    "pointofcontact_since_email_info_justification_origin_collector_package_name_id",
+				Unique:  true,
+				Columns: []*schema.Column{PointOfContactsColumns[3], PointOfContactsColumns[1], PointOfContactsColumns[2], PointOfContactsColumns[4], PointOfContactsColumns[5], PointOfContactsColumns[6], PointOfContactsColumns[9]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "source_id IS NULL AND package_version_id IS NULL AND package_name_id IS NOT NULL AND artifact_id IS NULL",
+				},
+			},
+			{
+				Name:    "pointofcontact_since_email_info_justification_origin_collector_artifact_id",
+				Unique:  true,
+				Columns: []*schema.Column{PointOfContactsColumns[3], PointOfContactsColumns[1], PointOfContactsColumns[2], PointOfContactsColumns[4], PointOfContactsColumns[5], PointOfContactsColumns[6], PointOfContactsColumns[10]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "source_id IS NULL AND package_version_id IS NULL AND package_name_id IS NULL AND artifact_id IS NOT NULL",
+				},
 			},
 		},
 	}
@@ -837,6 +1091,37 @@ var (
 			},
 		},
 	}
+	// VulnerabilityMetadataColumns holds the columns for the "vulnerability_metadata" table.
+	VulnerabilityMetadataColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "score_type", Type: field.TypeEnum, Enums: []string{"CVSSv2", "CVSSv3", "EPSSv1", "EPSSv2", "CVSSv31", "CVSSv4", "OWASP", "SSVC"}},
+		{Name: "score_value", Type: field.TypeFloat64},
+		{Name: "timestamp", Type: field.TypeTime},
+		{Name: "origin", Type: field.TypeString},
+		{Name: "collector", Type: field.TypeString},
+		{Name: "vulnerability_id_id", Type: field.TypeInt},
+	}
+	// VulnerabilityMetadataTable holds the schema information for the "vulnerability_metadata" table.
+	VulnerabilityMetadataTable = &schema.Table{
+		Name:       "vulnerability_metadata",
+		Columns:    VulnerabilityMetadataColumns,
+		PrimaryKey: []*schema.Column{VulnerabilityMetadataColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "vulnerability_metadata_vulnerability_ids_vulnerability_id",
+				Columns:    []*schema.Column{VulnerabilityMetadataColumns[6]},
+				RefColumns: []*schema.Column{VulnerabilityIdsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "vulnerabilitymetadata_vulnerability_id_id_score_type_score_value_timestamp_origin_collector",
+				Unique:  true,
+				Columns: []*schema.Column{VulnerabilityMetadataColumns[6], VulnerabilityMetadataColumns[1], VulnerabilityMetadataColumns[2], VulnerabilityMetadataColumns[3], VulnerabilityMetadataColumns[4], VulnerabilityMetadataColumns[5]},
+			},
+		},
+	}
 	// VulnerabilityTypesColumns holds the columns for the "vulnerability_types" table.
 	VulnerabilityTypesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -852,6 +1137,56 @@ var (
 				Name:    "vulnerabilitytype_type",
 				Unique:  true,
 				Columns: []*schema.Column{VulnerabilityTypesColumns[1]},
+			},
+		},
+	}
+	// CertifyLegalDeclaredLicensesColumns holds the columns for the "certify_legal_declared_licenses" table.
+	CertifyLegalDeclaredLicensesColumns = []*schema.Column{
+		{Name: "certify_legal_id", Type: field.TypeInt},
+		{Name: "license_id", Type: field.TypeInt},
+	}
+	// CertifyLegalDeclaredLicensesTable holds the schema information for the "certify_legal_declared_licenses" table.
+	CertifyLegalDeclaredLicensesTable = &schema.Table{
+		Name:       "certify_legal_declared_licenses",
+		Columns:    CertifyLegalDeclaredLicensesColumns,
+		PrimaryKey: []*schema.Column{CertifyLegalDeclaredLicensesColumns[0], CertifyLegalDeclaredLicensesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "certify_legal_declared_licenses_certify_legal_id",
+				Columns:    []*schema.Column{CertifyLegalDeclaredLicensesColumns[0]},
+				RefColumns: []*schema.Column{CertifyLegalsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "certify_legal_declared_licenses_license_id",
+				Columns:    []*schema.Column{CertifyLegalDeclaredLicensesColumns[1]},
+				RefColumns: []*schema.Column{LicensesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// CertifyLegalDiscoveredLicensesColumns holds the columns for the "certify_legal_discovered_licenses" table.
+	CertifyLegalDiscoveredLicensesColumns = []*schema.Column{
+		{Name: "certify_legal_id", Type: field.TypeInt},
+		{Name: "license_id", Type: field.TypeInt},
+	}
+	// CertifyLegalDiscoveredLicensesTable holds the schema information for the "certify_legal_discovered_licenses" table.
+	CertifyLegalDiscoveredLicensesTable = &schema.Table{
+		Name:       "certify_legal_discovered_licenses",
+		Columns:    CertifyLegalDiscoveredLicensesColumns,
+		PrimaryKey: []*schema.Column{CertifyLegalDiscoveredLicensesColumns[0], CertifyLegalDiscoveredLicensesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "certify_legal_discovered_licenses_certify_legal_id",
+				Columns:    []*schema.Column{CertifyLegalDiscoveredLicensesColumns[0]},
+				RefColumns: []*schema.Column{CertifyLegalsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "certify_legal_discovered_licenses_license_id",
+				Columns:    []*schema.Column{CertifyLegalDiscoveredLicensesColumns[1]},
+				RefColumns: []*schema.Column{LicensesColumns[0]},
+				OnDelete:   schema.Cascade,
 			},
 		},
 	}
@@ -961,19 +1296,23 @@ var (
 		BillOfMaterialsTable,
 		BuildersTable,
 		CertificationsTable,
+		CertifyLegalsTable,
 		CertifyScorecardsTable,
 		CertifyVexesTable,
 		CertifyVulnsTable,
 		DependenciesTable,
+		HasMetadataTable,
 		HasSourceAtsTable,
 		HashEqualsTable,
 		IsVulnerabilitiesTable,
+		LicensesTable,
 		OccurrencesTable,
 		PackageNamesTable,
 		PackageNamespacesTable,
 		PackageTypesTable,
 		PackageVersionsTable,
 		PkgEqualsTable,
+		PointOfContactsTable,
 		SlsaAttestationsTable,
 		ScorecardsTable,
 		SourceNamesTable,
@@ -981,7 +1320,10 @@ var (
 		SourceTypesTable,
 		VulnEqualsTable,
 		VulnerabilityIdsTable,
+		VulnerabilityMetadataTable,
 		VulnerabilityTypesTable,
+		CertifyLegalDeclaredLicensesTable,
+		CertifyLegalDiscoveredLicensesTable,
 		HashEqualArtifactsTable,
 		PkgEqualPackagesTable,
 		SlsaAttestationBuiltFromTable,
@@ -996,16 +1338,22 @@ func init() {
 	CertificationsTable.ForeignKeys[1].RefTable = PackageVersionsTable
 	CertificationsTable.ForeignKeys[2].RefTable = PackageNamesTable
 	CertificationsTable.ForeignKeys[3].RefTable = ArtifactsTable
+	CertifyLegalsTable.ForeignKeys[0].RefTable = PackageVersionsTable
+	CertifyLegalsTable.ForeignKeys[1].RefTable = SourceNamesTable
 	CertifyScorecardsTable.ForeignKeys[0].RefTable = SourceNamesTable
 	CertifyScorecardsTable.ForeignKeys[1].RefTable = ScorecardsTable
 	CertifyVexesTable.ForeignKeys[0].RefTable = PackageVersionsTable
 	CertifyVexesTable.ForeignKeys[1].RefTable = ArtifactsTable
-	CertifyVexesTable.ForeignKeys[2].RefTable = VulnerabilityTypesTable
+	CertifyVexesTable.ForeignKeys[2].RefTable = VulnerabilityIdsTable
 	CertifyVulnsTable.ForeignKeys[0].RefTable = VulnerabilityIdsTable
 	CertifyVulnsTable.ForeignKeys[1].RefTable = PackageVersionsTable
 	DependenciesTable.ForeignKeys[0].RefTable = PackageVersionsTable
 	DependenciesTable.ForeignKeys[1].RefTable = PackageNamesTable
 	DependenciesTable.ForeignKeys[2].RefTable = PackageVersionsTable
+	HasMetadataTable.ForeignKeys[0].RefTable = SourceNamesTable
+	HasMetadataTable.ForeignKeys[1].RefTable = PackageVersionsTable
+	HasMetadataTable.ForeignKeys[2].RefTable = PackageNamesTable
+	HasMetadataTable.ForeignKeys[3].RefTable = ArtifactsTable
 	HasSourceAtsTable.ForeignKeys[0].RefTable = PackageVersionsTable
 	HasSourceAtsTable.ForeignKeys[1].RefTable = PackageNamesTable
 	HasSourceAtsTable.ForeignKeys[2].RefTable = SourceNamesTable
@@ -1017,6 +1365,10 @@ func init() {
 	PackageNamesTable.ForeignKeys[0].RefTable = PackageNamespacesTable
 	PackageNamespacesTable.ForeignKeys[0].RefTable = PackageTypesTable
 	PackageVersionsTable.ForeignKeys[0].RefTable = PackageNamesTable
+	PointOfContactsTable.ForeignKeys[0].RefTable = SourceNamesTable
+	PointOfContactsTable.ForeignKeys[1].RefTable = PackageVersionsTable
+	PointOfContactsTable.ForeignKeys[2].RefTable = PackageNamesTable
+	PointOfContactsTable.ForeignKeys[3].RefTable = ArtifactsTable
 	SlsaAttestationsTable.ForeignKeys[0].RefTable = BuildersTable
 	SlsaAttestationsTable.ForeignKeys[1].RefTable = ArtifactsTable
 	SlsaAttestationsTable.Annotation = &entsql.Annotation{
@@ -1025,6 +1377,11 @@ func init() {
 	SourceNamesTable.ForeignKeys[0].RefTable = SourceNamespacesTable
 	SourceNamespacesTable.ForeignKeys[0].RefTable = SourceTypesTable
 	VulnerabilityIdsTable.ForeignKeys[0].RefTable = VulnerabilityTypesTable
+	VulnerabilityMetadataTable.ForeignKeys[0].RefTable = VulnerabilityIdsTable
+	CertifyLegalDeclaredLicensesTable.ForeignKeys[0].RefTable = CertifyLegalsTable
+	CertifyLegalDeclaredLicensesTable.ForeignKeys[1].RefTable = LicensesTable
+	CertifyLegalDiscoveredLicensesTable.ForeignKeys[0].RefTable = CertifyLegalsTable
+	CertifyLegalDiscoveredLicensesTable.ForeignKeys[1].RefTable = LicensesTable
 	HashEqualArtifactsTable.ForeignKeys[0].RefTable = HashEqualsTable
 	HashEqualArtifactsTable.ForeignKeys[1].RefTable = ArtifactsTable
 	PkgEqualPackagesTable.ForeignKeys[0].RefTable = PkgEqualsTable

@@ -21,6 +21,7 @@ import (
 	"crypto/sha1"
 	stdsql "database/sql"
 	"fmt"
+	"slices"
 	"sort"
 
 	"entgo.io/ent/dialect/sql"
@@ -57,27 +58,27 @@ func (b *EntBackend) Packages(ctx context.Context, pkgSpec *model.PkgSpec) ([]*m
 				packagename.HasVersionsWith(
 					optionalPredicate(pkgSpec.ID, IDEQ),
 					optionalPredicate(pkgSpec.Version, packageversion.VersionEqualFold),
-					packageversion.SubpathEQ(ptrWithDefault(pkgSpec.Subpath, "")),
+					optionalPredicate(pkgSpec.Subpath, packageversion.SubpathEqualFold),
 					packageversion.QualifiersMatch(pkgSpec.Qualifiers, ptrWithDefault(pkgSpec.MatchOnlyEmptyQualifiers, false)),
 				),
 			),
 		),
 	)
 
-	if PathContains(paths, "namespaces") || !isGQL {
+	if slices.Contains(paths, "namespaces") || !isGQL {
 		query.WithNamespaces(func(q *ent.PackageNamespaceQuery) {
 			q.Where(optionalPredicate(pkgSpec.Namespace, packagenamespace.NamespaceEQ))
 
-			if PathContains(paths, "namespaces.names") || !isGQL {
+			if slices.Contains(paths, "namespaces.names") || !isGQL {
 				q.WithNames(func(q *ent.PackageNameQuery) {
 					q.Where(optionalPredicate(pkgSpec.Name, packagename.NameEQ))
 
-					if PathContains(paths, "namespaces.names.versions") || !isGQL {
+					if slices.Contains(paths, "namespaces.names.versions") || !isGQL {
 						q.WithVersions(func(q *ent.PackageVersionQuery) {
 							q.Where(
 								optionalPredicate(pkgSpec.ID, IDEQ),
 								optionalPredicate(pkgSpec.Version, packageversion.VersionEQ),
-								packageversion.SubpathEQ(ptrWithDefault(pkgSpec.Subpath, "")),
+								optionalPredicate(pkgSpec.Subpath, packageversion.SubpathEqualFold),
 								packageversion.QualifiersMatch(pkgSpec.Qualifiers, ptrWithDefault(pkgSpec.MatchOnlyEmptyQualifiers, false)),
 							)
 						})
@@ -130,7 +131,6 @@ func (b *EntBackend) IngestPackage(ctx context.Context, pkg model.PkgInputSpec) 
 // upsertPackage is a helper function to create or update a package node and its associated edges.
 // It is used in multiple places, so we extract it to a function.
 func upsertPackage(ctx context.Context, client *ent.Tx, pkg model.PkgInputSpec) (*ent.PackageVersion, error) {
-
 	pkgID, err := client.PackageType.Create().
 		SetType(pkg.Type).
 		OnConflict(sql.ConflictColumns(packagetype.FieldType)).

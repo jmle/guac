@@ -22,18 +22,20 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"path/filepath"
+	"strings"
 
 	uuid "github.com/gofrs/uuid"
 	"github.com/guacsec/guac/pkg/emitter"
 	"github.com/guacsec/guac/pkg/handler/collector"
 	"github.com/guacsec/guac/pkg/handler/processor"
-	"github.com/guacsec/guac/pkg/handler/processor/cdx_vex"
 	"github.com/guacsec/guac/pkg/handler/processor/csaf"
 	"github.com/guacsec/guac/pkg/handler/processor/cyclonedx"
 	"github.com/guacsec/guac/pkg/handler/processor/deps_dev"
 	"github.com/guacsec/guac/pkg/handler/processor/dsse"
 	"github.com/guacsec/guac/pkg/handler/processor/guesser"
 	"github.com/guacsec/guac/pkg/handler/processor/ite6"
+	"github.com/guacsec/guac/pkg/handler/processor/open_vex"
 	"github.com/guacsec/guac/pkg/handler/processor/scorecard"
 	"github.com/guacsec/guac/pkg/handler/processor/spdx"
 	"github.com/guacsec/guac/pkg/logging"
@@ -53,10 +55,10 @@ func init() {
 	_ = RegisterDocumentProcessor(&dsse.DSSEProcessor{}, processor.DocumentDSSE)
 	_ = RegisterDocumentProcessor(&spdx.SPDXProcessor{}, processor.DocumentSPDX)
 	_ = RegisterDocumentProcessor(&csaf.CSAFProcessor{}, processor.DocumentCsaf)
+	_ = RegisterDocumentProcessor(&open_vex.OpenVEXProcessor{}, processor.DocumentOpenVEX)
 	_ = RegisterDocumentProcessor(&scorecard.ScorecardProcessor{}, processor.DocumentScorecard)
 	_ = RegisterDocumentProcessor(&cyclonedx.CycloneDXProcessor{}, processor.DocumentCycloneDX)
 	_ = RegisterDocumentProcessor(&deps_dev.DepsDev{}, processor.DocumentDepsDev)
-	_ = RegisterDocumentProcessor(&cdx_vex.CdxVexProcessor{}, processor.DocumentCdxVex)
 }
 
 func RegisterDocumentProcessor(p processor.DocumentProcessor, d processor.DocumentType) error {
@@ -216,6 +218,13 @@ func decodeDocument(ctx context.Context, i *processor.Document) error {
 	logger := logging.FromContext(ctx)
 	var reader io.Reader
 	var err error
+	if i.Encoding == "" {
+		ext := filepath.Ext(i.SourceInformation.Source)
+		encoding, ok := processor.EncodingExts[strings.ToLower(ext)]
+		if ok {
+			i.Encoding = encoding
+		}
+	}
 	logger.Infof("Decoding document with encoding:  %v", i.Encoding)
 	switch i.Encoding {
 	case processor.EncodingBzip2:
@@ -225,17 +234,16 @@ func decodeDocument(ctx context.Context, i *processor.Document) error {
 		if err != nil {
 			return fmt.Errorf("unable to create zstd reader: %w", err)
 		}
-	case processor.EncodingUnknown:
 	}
 	if reader != nil {
-		if err := decompressDocument(ctx, i, reader); err != nil {
+		if err := decompressDocument(i, reader); err != nil {
 			return fmt.Errorf("unable to decode document: %w", err)
 		}
 	}
 	return nil
 }
 
-func decompressDocument(ctx context.Context, i *processor.Document, reader io.Reader) error {
+func decompressDocument(i *processor.Document, reader io.Reader) error {
 	uncompressed, err := io.ReadAll(reader)
 	if err != nil {
 		return fmt.Errorf("unable to decompress document: %w", err)

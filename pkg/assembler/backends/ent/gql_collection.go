@@ -11,19 +11,23 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/billofmaterials"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/builder"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certification"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifylegal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyscorecard"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvex"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvuln"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/dependency"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hashequal"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/hasmetadata"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hassourceat"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/isvulnerability"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/license"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/occurrence"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packagename"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packagenamespace"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packagetype"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packageversion"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pkgequal"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/pointofcontact"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/scorecard"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/slsaattestation"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/sourcename"
@@ -31,6 +35,7 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/sourcetype"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnerabilityid"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnerabilitymetadata"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnerabilitytype"
 )
 
@@ -239,6 +244,11 @@ func (bom *BillOfMaterialsQuery) collectField(ctx context.Context, opCtx *graphq
 			if _, ok := fieldSeen[billofmaterials.FieldCollector]; !ok {
 				selectedFields = append(selectedFields, billofmaterials.FieldCollector)
 				fieldSeen[billofmaterials.FieldCollector] = struct{}{}
+			}
+		case "knownSince":
+			if _, ok := fieldSeen[billofmaterials.FieldKnownSince]; !ok {
+				selectedFields = append(selectedFields, billofmaterials.FieldKnownSince)
+				fieldSeen[billofmaterials.FieldKnownSince] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -471,6 +481,11 @@ func (c *CertificationQuery) collectField(ctx context.Context, opCtx *graphql.Op
 				selectedFields = append(selectedFields, certification.FieldCollector)
 				fieldSeen[certification.FieldCollector] = struct{}{}
 			}
+		case "knownSince":
+			if _, ok := fieldSeen[certification.FieldKnownSince]; !ok {
+				selectedFields = append(selectedFields, certification.FieldKnownSince)
+				fieldSeen[certification.FieldKnownSince] = struct{}{}
+			}
 		case "id":
 		case "__typename":
 		default:
@@ -491,6 +506,172 @@ type certificationPaginateArgs struct {
 
 func newCertificationPaginateArgs(rv map[string]any) *certificationPaginateArgs {
 	args := &certificationPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (cl *CertifyLegalQuery) CollectFields(ctx context.Context, satisfies ...string) (*CertifyLegalQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return cl, nil
+	}
+	if err := cl.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return cl, nil
+}
+
+func (cl *CertifyLegalQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(certifylegal.Columns))
+		selectedFields = []string{certifylegal.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "package":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&PackageVersionClient{config: cl.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			cl.withPackage = query
+			if _, ok := fieldSeen[certifylegal.FieldPackageID]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldPackageID)
+				fieldSeen[certifylegal.FieldPackageID] = struct{}{}
+			}
+		case "source":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&SourceNameClient{config: cl.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			cl.withSource = query
+			if _, ok := fieldSeen[certifylegal.FieldSourceID]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldSourceID)
+				fieldSeen[certifylegal.FieldSourceID] = struct{}{}
+			}
+		case "declaredLicenses":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&LicenseClient{config: cl.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			cl.WithNamedDeclaredLicenses(alias, func(wq *LicenseQuery) {
+				*wq = *query
+			})
+		case "discoveredLicenses":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&LicenseClient{config: cl.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			cl.WithNamedDiscoveredLicenses(alias, func(wq *LicenseQuery) {
+				*wq = *query
+			})
+		case "packageID":
+			if _, ok := fieldSeen[certifylegal.FieldPackageID]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldPackageID)
+				fieldSeen[certifylegal.FieldPackageID] = struct{}{}
+			}
+		case "sourceID":
+			if _, ok := fieldSeen[certifylegal.FieldSourceID]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldSourceID)
+				fieldSeen[certifylegal.FieldSourceID] = struct{}{}
+			}
+		case "declaredLicense":
+			if _, ok := fieldSeen[certifylegal.FieldDeclaredLicense]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldDeclaredLicense)
+				fieldSeen[certifylegal.FieldDeclaredLicense] = struct{}{}
+			}
+		case "discoveredLicense":
+			if _, ok := fieldSeen[certifylegal.FieldDiscoveredLicense]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldDiscoveredLicense)
+				fieldSeen[certifylegal.FieldDiscoveredLicense] = struct{}{}
+			}
+		case "attribution":
+			if _, ok := fieldSeen[certifylegal.FieldAttribution]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldAttribution)
+				fieldSeen[certifylegal.FieldAttribution] = struct{}{}
+			}
+		case "justification":
+			if _, ok := fieldSeen[certifylegal.FieldJustification]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldJustification)
+				fieldSeen[certifylegal.FieldJustification] = struct{}{}
+			}
+		case "timeScanned":
+			if _, ok := fieldSeen[certifylegal.FieldTimeScanned]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldTimeScanned)
+				fieldSeen[certifylegal.FieldTimeScanned] = struct{}{}
+			}
+		case "origin":
+			if _, ok := fieldSeen[certifylegal.FieldOrigin]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldOrigin)
+				fieldSeen[certifylegal.FieldOrigin] = struct{}{}
+			}
+		case "collector":
+			if _, ok := fieldSeen[certifylegal.FieldCollector]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldCollector)
+				fieldSeen[certifylegal.FieldCollector] = struct{}{}
+			}
+		case "declaredLicensesHash":
+			if _, ok := fieldSeen[certifylegal.FieldDeclaredLicensesHash]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldDeclaredLicensesHash)
+				fieldSeen[certifylegal.FieldDeclaredLicensesHash] = struct{}{}
+			}
+		case "discoveredLicensesHash":
+			if _, ok := fieldSeen[certifylegal.FieldDiscoveredLicensesHash]; !ok {
+				selectedFields = append(selectedFields, certifylegal.FieldDiscoveredLicensesHash)
+				fieldSeen[certifylegal.FieldDiscoveredLicensesHash] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		cl.Select(selectedFields...)
+	}
+	return nil
+}
+
+type certifylegalPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CertifyLegalPaginateOption
+}
+
+func newCertifyLegalPaginateArgs(rv map[string]any) *certifylegalPaginateArgs {
+	args := &certifylegalPaginateArgs{}
 	if rv == nil {
 		return args
 	}
@@ -659,7 +840,7 @@ func (cv *CertifyVexQuery) collectField(ctx context.Context, opCtx *graphql.Oper
 			var (
 				alias = field.Alias
 				path  = append(path, alias)
-				query = (&VulnerabilityTypeClient{config: cv.config}).Query()
+				query = (&VulnerabilityIDClient{config: cv.config}).Query()
 			)
 			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
 				return err
@@ -1031,6 +1212,171 @@ func newDependencyPaginateArgs(rv map[string]any) *dependencyPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (hm *HasMetadataQuery) CollectFields(ctx context.Context, satisfies ...string) (*HasMetadataQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return hm, nil
+	}
+	if err := hm.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return hm, nil
+}
+
+func (hm *HasMetadataQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(hasmetadata.Columns))
+		selectedFields = []string{hasmetadata.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "source":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&SourceNameClient{config: hm.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			hm.withSource = query
+			if _, ok := fieldSeen[hasmetadata.FieldSourceID]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldSourceID)
+				fieldSeen[hasmetadata.FieldSourceID] = struct{}{}
+			}
+		case "packageVersion":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&PackageVersionClient{config: hm.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			hm.withPackageVersion = query
+			if _, ok := fieldSeen[hasmetadata.FieldPackageVersionID]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldPackageVersionID)
+				fieldSeen[hasmetadata.FieldPackageVersionID] = struct{}{}
+			}
+		case "allVersions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&PackageNameClient{config: hm.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			hm.withAllVersions = query
+			if _, ok := fieldSeen[hasmetadata.FieldPackageNameID]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldPackageNameID)
+				fieldSeen[hasmetadata.FieldPackageNameID] = struct{}{}
+			}
+		case "artifact":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ArtifactClient{config: hm.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			hm.withArtifact = query
+			if _, ok := fieldSeen[hasmetadata.FieldArtifactID]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldArtifactID)
+				fieldSeen[hasmetadata.FieldArtifactID] = struct{}{}
+			}
+		case "sourceID":
+			if _, ok := fieldSeen[hasmetadata.FieldSourceID]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldSourceID)
+				fieldSeen[hasmetadata.FieldSourceID] = struct{}{}
+			}
+		case "packageVersionID":
+			if _, ok := fieldSeen[hasmetadata.FieldPackageVersionID]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldPackageVersionID)
+				fieldSeen[hasmetadata.FieldPackageVersionID] = struct{}{}
+			}
+		case "packageNameID":
+			if _, ok := fieldSeen[hasmetadata.FieldPackageNameID]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldPackageNameID)
+				fieldSeen[hasmetadata.FieldPackageNameID] = struct{}{}
+			}
+		case "artifactID":
+			if _, ok := fieldSeen[hasmetadata.FieldArtifactID]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldArtifactID)
+				fieldSeen[hasmetadata.FieldArtifactID] = struct{}{}
+			}
+		case "timestamp":
+			if _, ok := fieldSeen[hasmetadata.FieldTimestamp]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldTimestamp)
+				fieldSeen[hasmetadata.FieldTimestamp] = struct{}{}
+			}
+		case "key":
+			if _, ok := fieldSeen[hasmetadata.FieldKey]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldKey)
+				fieldSeen[hasmetadata.FieldKey] = struct{}{}
+			}
+		case "value":
+			if _, ok := fieldSeen[hasmetadata.FieldValue]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldValue)
+				fieldSeen[hasmetadata.FieldValue] = struct{}{}
+			}
+		case "justification":
+			if _, ok := fieldSeen[hasmetadata.FieldJustification]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldJustification)
+				fieldSeen[hasmetadata.FieldJustification] = struct{}{}
+			}
+		case "origin":
+			if _, ok := fieldSeen[hasmetadata.FieldOrigin]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldOrigin)
+				fieldSeen[hasmetadata.FieldOrigin] = struct{}{}
+			}
+		case "collector":
+			if _, ok := fieldSeen[hasmetadata.FieldCollector]; !ok {
+				selectedFields = append(selectedFields, hasmetadata.FieldCollector)
+				fieldSeen[hasmetadata.FieldCollector] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		hm.Select(selectedFields...)
+	}
+	return nil
+}
+
+type hasmetadataPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []HasMetadataPaginateOption
+}
+
+func newHasMetadataPaginateArgs(rv map[string]any) *hasmetadataPaginateArgs {
+	args := &hasmetadataPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (hsa *HasSourceAtQuery) CollectFields(ctx context.Context, satisfies ...string) (*HasSourceAtQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -1346,6 +1692,104 @@ type isvulnerabilityPaginateArgs struct {
 
 func newIsVulnerabilityPaginateArgs(rv map[string]any) *isvulnerabilityPaginateArgs {
 	args := &isvulnerabilityPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (l *LicenseQuery) CollectFields(ctx context.Context, satisfies ...string) (*LicenseQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return l, nil
+	}
+	if err := l.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return l, nil
+}
+
+func (l *LicenseQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(license.Columns))
+		selectedFields = []string{license.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "declaredInCertifyLegals":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CertifyLegalClient{config: l.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			l.WithNamedDeclaredInCertifyLegals(alias, func(wq *CertifyLegalQuery) {
+				*wq = *query
+			})
+		case "discoveredInCertifyLegals":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CertifyLegalClient{config: l.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			l.WithNamedDiscoveredInCertifyLegals(alias, func(wq *CertifyLegalQuery) {
+				*wq = *query
+			})
+		case "name":
+			if _, ok := fieldSeen[license.FieldName]; !ok {
+				selectedFields = append(selectedFields, license.FieldName)
+				fieldSeen[license.FieldName] = struct{}{}
+			}
+		case "inline":
+			if _, ok := fieldSeen[license.FieldInline]; !ok {
+				selectedFields = append(selectedFields, license.FieldInline)
+				fieldSeen[license.FieldInline] = struct{}{}
+			}
+		case "listVersion":
+			if _, ok := fieldSeen[license.FieldListVersion]; !ok {
+				selectedFields = append(selectedFields, license.FieldListVersion)
+				fieldSeen[license.FieldListVersion] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		l.Select(selectedFields...)
+	}
+	return nil
+}
+
+type licensePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []LicensePaginateOption
+}
+
+func newLicensePaginateArgs(rv map[string]any) *licensePaginateArgs {
+	args := &licensePaginateArgs{}
 	if rv == nil {
 		return args
 	}
@@ -1968,6 +2412,171 @@ type pkgequalPaginateArgs struct {
 
 func newPkgEqualPaginateArgs(rv map[string]any) *pkgequalPaginateArgs {
 	args := &pkgequalPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (poc *PointOfContactQuery) CollectFields(ctx context.Context, satisfies ...string) (*PointOfContactQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return poc, nil
+	}
+	if err := poc.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return poc, nil
+}
+
+func (poc *PointOfContactQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(pointofcontact.Columns))
+		selectedFields = []string{pointofcontact.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "source":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&SourceNameClient{config: poc.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			poc.withSource = query
+			if _, ok := fieldSeen[pointofcontact.FieldSourceID]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldSourceID)
+				fieldSeen[pointofcontact.FieldSourceID] = struct{}{}
+			}
+		case "packageVersion":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&PackageVersionClient{config: poc.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			poc.withPackageVersion = query
+			if _, ok := fieldSeen[pointofcontact.FieldPackageVersionID]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldPackageVersionID)
+				fieldSeen[pointofcontact.FieldPackageVersionID] = struct{}{}
+			}
+		case "allVersions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&PackageNameClient{config: poc.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			poc.withAllVersions = query
+			if _, ok := fieldSeen[pointofcontact.FieldPackageNameID]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldPackageNameID)
+				fieldSeen[pointofcontact.FieldPackageNameID] = struct{}{}
+			}
+		case "artifact":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ArtifactClient{config: poc.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			poc.withArtifact = query
+			if _, ok := fieldSeen[pointofcontact.FieldArtifactID]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldArtifactID)
+				fieldSeen[pointofcontact.FieldArtifactID] = struct{}{}
+			}
+		case "sourceID":
+			if _, ok := fieldSeen[pointofcontact.FieldSourceID]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldSourceID)
+				fieldSeen[pointofcontact.FieldSourceID] = struct{}{}
+			}
+		case "packageVersionID":
+			if _, ok := fieldSeen[pointofcontact.FieldPackageVersionID]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldPackageVersionID)
+				fieldSeen[pointofcontact.FieldPackageVersionID] = struct{}{}
+			}
+		case "packageNameID":
+			if _, ok := fieldSeen[pointofcontact.FieldPackageNameID]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldPackageNameID)
+				fieldSeen[pointofcontact.FieldPackageNameID] = struct{}{}
+			}
+		case "artifactID":
+			if _, ok := fieldSeen[pointofcontact.FieldArtifactID]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldArtifactID)
+				fieldSeen[pointofcontact.FieldArtifactID] = struct{}{}
+			}
+		case "email":
+			if _, ok := fieldSeen[pointofcontact.FieldEmail]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldEmail)
+				fieldSeen[pointofcontact.FieldEmail] = struct{}{}
+			}
+		case "info":
+			if _, ok := fieldSeen[pointofcontact.FieldInfo]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldInfo)
+				fieldSeen[pointofcontact.FieldInfo] = struct{}{}
+			}
+		case "since":
+			if _, ok := fieldSeen[pointofcontact.FieldSince]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldSince)
+				fieldSeen[pointofcontact.FieldSince] = struct{}{}
+			}
+		case "justification":
+			if _, ok := fieldSeen[pointofcontact.FieldJustification]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldJustification)
+				fieldSeen[pointofcontact.FieldJustification] = struct{}{}
+			}
+		case "origin":
+			if _, ok := fieldSeen[pointofcontact.FieldOrigin]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldOrigin)
+				fieldSeen[pointofcontact.FieldOrigin] = struct{}{}
+			}
+		case "collector":
+			if _, ok := fieldSeen[pointofcontact.FieldCollector]; !ok {
+				selectedFields = append(selectedFields, pointofcontact.FieldCollector)
+				fieldSeen[pointofcontact.FieldCollector] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		poc.Select(selectedFields...)
+	}
+	return nil
+}
+
+type pointofcontactPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []PointOfContactPaginateOption
+}
+
+func newPointOfContactPaginateArgs(rv map[string]any) *pointofcontactPaginateArgs {
+	args := &pointofcontactPaginateArgs{}
 	if rv == nil {
 		return args
 	}
@@ -2650,6 +3259,18 @@ func (vi *VulnerabilityIDQuery) collectField(ctx context.Context, opCtx *graphql
 			vi.WithNamedVulnEquals(alias, func(wq *VulnEqualQuery) {
 				*wq = *query
 			})
+		case "vulnerabilityMetadata":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&VulnerabilityMetadataClient{config: vi.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			vi.WithNamedVulnerabilityMetadata(alias, func(wq *VulnerabilityMetadataQuery) {
+				*wq = *query
+			})
 		case "vulnerabilityID":
 			if _, ok := fieldSeen[vulnerabilityid.FieldVulnerabilityID]; !ok {
 				selectedFields = append(selectedFields, vulnerabilityid.FieldVulnerabilityID)
@@ -2680,6 +3301,109 @@ type vulnerabilityidPaginateArgs struct {
 
 func newVulnerabilityIDPaginateArgs(rv map[string]any) *vulnerabilityidPaginateArgs {
 	args := &vulnerabilityidPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (vm *VulnerabilityMetadataQuery) CollectFields(ctx context.Context, satisfies ...string) (*VulnerabilityMetadataQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return vm, nil
+	}
+	if err := vm.collectField(ctx, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return vm, nil
+}
+
+func (vm *VulnerabilityMetadataQuery) collectField(ctx context.Context, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(vulnerabilitymetadata.Columns))
+		selectedFields = []string{vulnerabilitymetadata.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+		case "vulnerabilityID":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&VulnerabilityIDClient{config: vm.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, satisfies...); err != nil {
+				return err
+			}
+			vm.withVulnerabilityID = query
+			if _, ok := fieldSeen[vulnerabilitymetadata.FieldVulnerabilityIDID]; !ok {
+				selectedFields = append(selectedFields, vulnerabilitymetadata.FieldVulnerabilityIDID)
+				fieldSeen[vulnerabilitymetadata.FieldVulnerabilityIDID] = struct{}{}
+			}
+		case "vulnerabilityIDID":
+			if _, ok := fieldSeen[vulnerabilitymetadata.FieldVulnerabilityIDID]; !ok {
+				selectedFields = append(selectedFields, vulnerabilitymetadata.FieldVulnerabilityIDID)
+				fieldSeen[vulnerabilitymetadata.FieldVulnerabilityIDID] = struct{}{}
+			}
+		case "scoreType":
+			if _, ok := fieldSeen[vulnerabilitymetadata.FieldScoreType]; !ok {
+				selectedFields = append(selectedFields, vulnerabilitymetadata.FieldScoreType)
+				fieldSeen[vulnerabilitymetadata.FieldScoreType] = struct{}{}
+			}
+		case "scoreValue":
+			if _, ok := fieldSeen[vulnerabilitymetadata.FieldScoreValue]; !ok {
+				selectedFields = append(selectedFields, vulnerabilitymetadata.FieldScoreValue)
+				fieldSeen[vulnerabilitymetadata.FieldScoreValue] = struct{}{}
+			}
+		case "timestamp":
+			if _, ok := fieldSeen[vulnerabilitymetadata.FieldTimestamp]; !ok {
+				selectedFields = append(selectedFields, vulnerabilitymetadata.FieldTimestamp)
+				fieldSeen[vulnerabilitymetadata.FieldTimestamp] = struct{}{}
+			}
+		case "origin":
+			if _, ok := fieldSeen[vulnerabilitymetadata.FieldOrigin]; !ok {
+				selectedFields = append(selectedFields, vulnerabilitymetadata.FieldOrigin)
+				fieldSeen[vulnerabilitymetadata.FieldOrigin] = struct{}{}
+			}
+		case "collector":
+			if _, ok := fieldSeen[vulnerabilitymetadata.FieldCollector]; !ok {
+				selectedFields = append(selectedFields, vulnerabilitymetadata.FieldCollector)
+				fieldSeen[vulnerabilitymetadata.FieldCollector] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		vm.Select(selectedFields...)
+	}
+	return nil
+}
+
+type vulnerabilitymetadataPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []VulnerabilityMetadataPaginateOption
+}
+
+func newVulnerabilityMetadataPaginateArgs(rv map[string]any) *vulnerabilitymetadataPaginateArgs {
+	args := &vulnerabilitymetadataPaginateArgs{}
 	if rv == nil {
 		return args
 	}
